@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Park Side Cafe — Smart QR Restaurant OS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cream: #F7F4EF;
+      --dark: #0E0E10;
+      --card-dark: #18181B;
+      --border-dark: #27272A;
+      --orange: #F97316;
+      --orange-dark: #EA580C;
+      --zinc-900: #18181B;
+      --zinc-600: #52525B;
+      --zinc-500: #71717A;
+      --zinc-400: #A1A1AA;
+      --stone-200: #E7E5E4;
+      --stone-100: #F5F5F4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--cream); color: var(--zinc-900); min-height: 100vh; }
+    body.dark-mode { background: var(--dark); color: #FFFFFF; }
+    .hidden { display: none !important; }
+    button, select, input, textarea { font-family: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+
+    .topbar { position: sticky; top: 0; z-index: 50; background: #09090B; color: #fff; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+    .brand-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--orange); animation: blink 1.5s infinite; }
+    .brand-title { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+    .tbl-select { background: #27272A; color: #FB923C; font-weight: 700; font-size: 12px; padding: 5px 10px; border-radius: 8px; border: 1px solid #3F3F46; outline: none; }
+    .tbl-locked-pill { background: #27272A; color: #34D399; font-weight: 800; font-size: 11px; padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(52,211,153,0.4); }
+    .clock-pill { background: #18181B; border: 1px solid #27272A; color: #E4E4E7; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 8px; font-variant-numeric: tabular-nums; }
+    .mode-group { display: flex; gap: 4px; background: #18181B; padding: 4px; border-radius: 12px; border: 1px solid #27272A; }
+    .mode-btn { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #A1A1AA; display: inline-flex; align-items: center; gap: 4px; }
+    .mode-btn.active { background: var(--orange); color: #fff; }
+    .notif-badge { background: #EF4444; color: #fff; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 99px; animation: blink 1s infinite; }
+
+    .live-toast { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 80; background: #18181B; color: #fff; border: 2px solid #F97316; border-radius: 16px; padding: 12px 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.45); display: flex; align-items: center; gap: 12px; max-width: 92%; width: 420px; }
+
+    .cust-wrap { max-width: 460px; margin: 0 auto; padding-bottom: 105px; }
+    .cust-header { padding: 18px 18px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .rest-h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+    .rest-h1 span { color: var(--orange); }
+    .rest-sub { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--zinc-500); margin-top: 4px; text-transform: uppercase; }
+    .tbl-badge { background: #18181B; color: #fff; font-size: 11px; font-weight: 800; padding: 6px 13px; border-radius: 99px; display: inline-block; }
+    .tbl-state { font-size: 10px; font-weight: 800; margin-top: 5px; color: #059669; }
+
+    .sub-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: #E7E5E4; padding: 5px; border-radius: 16px; margin: 0 18px 16px; }
+    .sub-tab { padding: 8px 4px; border-radius: 12px; font-size: 12px; font-weight: 700; color: var(--zinc-600); }
+    .sub-tab.active { background: #fff; color: var(--zinc-900); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+    .sec-pad { padding: 0 18px; }
+    .search-box { position: relative; margin-bottom: 12px; }
+    .search-box input { width: 100%; background: #fff; border: 1px solid var(--stone-200); border-radius: 14px; padding: 11px 14px 11px 36px; font-size: 13px; outline: none; }
+    .search-box input:focus { border-color: var(--orange); }
+    .search-box span { position: absolute; left: 12px; top: 11px; font-size: 14px; }
+
+    .cat-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+    .cat-pill { padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; background: #fff; color: #3F3F46; border: 1px solid var(--stone-200); white-space: nowrap; }
+    .cat-pill.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+
+    .dish-card { background: #fff; border: 1px solid var(--stone-200); border-radius: 18px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; cursor: pointer; }
+    .dish-card:hover { border-color: var(--orange); }
+    .dish-left { display: flex; align-items: center; gap: 12px; }
+    .dish-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--stone-100); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .dish-name { font-size: 14px; font-weight: 800; }
+    .dish-desc { font-size: 12px; color: var(--zinc-500); margin-top: 2px; }
+    .dish-price { font-size: 14px; font-weight: 800; margin-top: 4px; }
+    .add-circle { width: 32px; height: 32px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    .card-white { background: #fff; border: 1px solid var(--stone-200); border-radius: 24px; padding: 22px; margin-bottom: 14px; }
+    .timer-ring { width: 132px; height: 132px; border-radius: 50%; border: 8px solid rgba(249,115,22,0.18); border-top-color: var(--orange); margin: 18px auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .timer-val { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .timer-lbl { font-size: 10px; font-weight: 800; color: var(--zinc-400); letter-spacing: 0.08em; margin-top: 2px; }
+    .stepper { display: flex; justify-content: center; gap: 16px; font-size: 12px; font-weight: 700; margin-bottom: 20px; color: #D4D4D8; }
+    .step-done { color: #059669; }
+    .step-active { color: var(--orange); }
+    .step-dining { color: #0284C7; }
+
+    .tile-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .quick-tile { background: var(--stone-100); border: 1px solid var(--stone-200); border-radius: 16px; padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; }
+
+    .pulse-circle { width: 124px; height: 124px; border-radius: 50%; background: var(--orange); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 26px auto; font-weight: 800; font-size: 14px; animation: pulseRing 2s infinite; }
+    @keyframes pulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.65); }
+      70% { box-shadow: 0 0 0 18px rgba(249,115,22,0); }
+      100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    .btn-primary { width: 100%; background: var(--orange); color: #fff; font-weight: 800; font-size: 13px; padding: 13px; border-radius: 14px; }
+    .btn-dark { background: #18181B; color: #fff; font-weight: 700; font-size: 12px; padding: 11px 16px; border-radius: 12px; }
+    .btn-green { background: #059669; color: #fff; font-weight: 700; font-size: 12px; padding: 10px 14px; border-radius: 12px; }
+    .btn-red { background: #DC2626; color: #fff; font-weight: 700; font-size: 12px; padding: 10px 14px; border-radius: 12px; }
+
+    .pay-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--stone-200); border-radius: 14px; font-size: 13px; font-weight: 700; margin-top: 8px; }
+    .float-bar { position: fixed; bottom: 14px; left: 14px; right: 14px; max-width: 432px; margin: 0 auto; background: #18181B; color: #fff; padding: 12px 16px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.35); z-index: 40; }
+
+    .quiz-opt { width: 100%; text-align: left; background: #27272A; color: #fff; padding: 11px 13px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 8px; border: 1px solid #3F3F46; }
+
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-box { background: #fff; color: var(--zinc-900); width: 100%; max-width: 400px; border-radius: 24px; padding: 22px; }
+    .modal-dark { background: #18181B; color: #fff; border: 1px solid #27272A; }
+
+    .staff-wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    .dark-card { background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 22px; padding: 18px; margin-bottom: 18px; }
+    .kpi-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
+    .kpi-nums { display: flex; gap: 18px; flex-wrap: wrap; }
+    .kpi-lbl { font-size: 10px; font-weight: 800; color: var(--zinc-400); letter-spacing: 0.06em; }
+    .kpi-val { font-size: 22px; font-weight: 800; margin-top: 2px; }
+    .staff-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+    .floor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .tbl-tile { background: #121215; border: 1px solid #27272A; border-radius: 16px; padding: 12px 8px; text-align: center; cursor: pointer; }
+    .counter-tile { background: rgba(168,85,247,0.12); border: 1px dashed rgba(192,132,252,0.7); }
+    .st-ordering { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.6); }
+    .st-cooking { background: rgba(249,115,22,0.16); border-color: rgba(249,115,22,0.7); }
+    .st-dining { background: rgba(14,165,233,0.16); border-color: rgba(14,165,233,0.7); }
+    .st-paid { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.6); }
+    .st-alert { background: rgba(239,68,68,0.22); border-color: #EF4444; animation: blink 1s infinite; }
+    .kds-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .kds-col { background: #121215; border: 1px solid #27272A; border-radius: 16px; padding: 14px; }
+
+    .guest-chip { padding: 6px 12px; border-radius: 99px; font-size: 11px; font-weight: 800; border: 1px solid #3F3F46; background: #27272A; color: #E4E4E7; }
+    .guest-chip.active { background: #F97316; color: #fff; border-color: #F97316; }
+
+    .admin-wrap { max-width: 960px; margin: 0 auto; padding: 18px; }
+    .owner-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: #E7E5E4; padding: 6px; border-radius: 16px; margin-bottom: 18px; }
+    .owner-tab { padding: 10px 6px; border-radius: 12px; font-size: 12px; font-weight: 800; color: #3F3F46; }
+    .owner-tab.active { background: #18181B; color: #fff; }
+    .rep-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+    .rep-pill { padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; background: var(--stone-100); color: #3F3F46; }
+    .rep-pill.active { background: var(--orange); color: #fff; }
+    .rep-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .rep-box { background: var(--stone-100); border: 1px solid var(--stone-200); border-radius: 16px; padding: 12px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--stone-200); border-radius: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--stone-100); }
+    th { background: var(--stone-100); font-weight: 800; color: #52525B; text-transform: uppercase; font-size: 11px; }
+    .qr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .qr-card { background: var(--stone-100); border: 1px solid var(--stone-200); border-radius: 18px; padding: 14px; text-align: center; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .inp { width: 100%; border: 1px solid #D6D3D1; border-radius: 12px; padding: 10px 12px; font-size: 13px; background: #fff; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #ownerSecReports, #ownerSecReports * { visibility: visible; }
+      #ownerSecReports { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; padding: 0; }
+      .no-print { display: none !important; }
+    }
+    @media (max-width: 768px) {
+      .staff-grid, .kds-grid, .form-grid { grid-template-columns: 1fr; }
+      .floor-grid, .rep-kpis, .qr-grid { grid-template-columns: repeat(2, 1fr); }
+      .owner-nav { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body id="appBody">
+
+  <div id="liveOrderToast" class="live-toast hidden">
+    <div style="font-size:24px;">🔔</div>
+    <div style="flex:1;">
+      <p style="font-size:11px;font-weight:800;color:#FB923C;text-transform:uppercase;" id="toastHeader">NEW ORDER ALERT</p>
+      <p style="font-size:13px;font-weight:700;margin-top:2px;" id="toastBody">New order received!</p>
+    </div>
+    <button onclick="dismissToastAndOpenStaff()" style="background:#F97316;color:#fff;font-size:11px;font-weight:800;padding:7px 12px;border-radius:10px;">View</button>
+    <button onclick="closeLiveToast()" style="color:#A1A1AA;font-weight:800;font-size:14px;">✕</button>
+  </div>
+
+  <header class="topbar">
+    <div class="brand-wrap">
+      <span class="live-dot"></span>
+      <span class="brand-title" id="topBrandName">PARK SIDE CAFE OS</span>
+      <select id="tableSelector" onchange="changeTable(this.value)" class="tbl-select"></select>
+      <span id="qrLockedTableBadge" class="tbl-locked-pill hidden">🔒 TABLE 05</span>
+      <span class="clock-pill" id="liveSystemClock">--:--:--</span>
+    </div>
+    <div class="mode-group">
+      <button onclick="switchMainView('customer')" id="btnViewCustomer" class="mode-btn active">📱 Guest</button>
+      <button onclick="requestPinAccess('staff')" id="btnViewStaff" class="mode-btn">🔒 Staff <span id="staffOrderCountBadge" class="notif-badge hidden">0</span></button>
+      <button onclick="requestPinAccess('admin')" id="btnViewAdmin" class="mode-btn">🔒 Owner</button>
+    </div>
+  </header>
+
+  <div id="pinModal" class="modal-bg hidden">
+    <div class="modal-box modal-dark" style="max-width:330px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:8px;">🔐</div>
+      <h3 style="font-size:18px;font-weight:800;" id="pinModalTitle">Staff Access</h3>
+      <p style="font-size:12px;color:#A1A1AA;margin:6px 0 14px;" id="pinModalHint">Enter 4-digit PIN</p>
+      <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••" style="width:100%;background:#09090B;border:1px solid #3F3F46;border-radius:12px;padding:12px;text-align:center;font-size:24px;font-weight:800;letter-spacing:0.4em;color:#FB923C;outline:none;">
+      <p id="pinErrorMsg" class="hidden" style="color:#F87171;font-size:12px;font-weight:700;margin-top:8px;">Incorrect PIN!</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
+        <button onclick="closePinModal()" style="background:#27272A;color:#D4D4D8;padding:10px;border-radius:12px;font-weight:700;font-size:12px;">Cancel</button>
+        <button onclick="verifyPin()" style="background:#F97316;color:#fff;padding:10px;border-radius:12px;font-weight:700;font-size:12px;">Unlock →</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="custNameModal" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:360px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;" id="cnmTableTag">TABLE 05</span>
+        <button onclick="closeCustNameModal()" style="width:28px;height:28px;border-radius:50%;background:#F5F5F4;font-weight:800;">✕</button>
+      </div>
+      <h3 style="font-size:20px;font-weight:800;">Apna Name Likhein</h3>
+      <p style="font-size:12px;color:#71717A;margin:4px 0 14px;">Ek hi table par alag-alag log apne naam se alag order aur apna bill pay kar sakte hain.</p>
+      <input type="text" id="customerNameInput" placeholder="e.g. Rahul Sharma" class="inp" style="margin-bottom:10px;font-weight:700;">
+      <p id="cnmError" class="hidden" style="color:#DC2626;font-size:12px;font-weight:700;margin-bottom:10px;">Please enter your name!</p>
+      <button onclick="confirmCustomerNameAndPlaceOrder()" class="btn-primary">Confirm & Place Order →</button>
+    </div>
+  </div>
+
+  <div id="reportExportModal" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:560px;max-height:90vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E7E5E4;padding-bottom:10px;margin-bottom:12px;">
+        <div>
+          <span style="background:#ECFDF5;color:#059669;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;" id="remFormatBadge">REPORT</span>
+          <h3 style="font-size:18px;font-weight:800;margin-top:4px;" id="remTitle">Report Ready</h3>
+        </div>
+        <button onclick="closeReportExportModal()" style="width:30px;height:30px;border-radius:50%;background:#F5F5F4;font-weight:800;">✕</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <button onclick="copyExportReportText()" id="btnCopyRepText" class="btn-dark">📋 Copy Report Data</button>
+        <button onclick="triggerDirectPrintView()" class="btn-red">🖨️ Print / Save PDF</button>
+      </div>
+      <div id="remPreviewBox" style="background:#FAFAF9;border:1px solid #E7E5E4;border-radius:14px;padding:12px;max-height:280px;overflow:auto;font-size:11px;"></div>
+    </div>
+  </div>
+
+  <main id="customerView" class="cust-wrap">
+    <div class="cust-header">
+      <div>
+        <h1 class="rest-h1" id="custRestName">Park Side Cafe<span>.</span></h1>
+        <p class="rest-sub" id="custRestCity">KOLKATA • DINE-IN & TAKEAWAY</p>
+        <p id="custActiveNameBanner" class="hidden" style="font-size:11px;font-weight:800;color:#EA580C;margin-top:4px;"></p>
+      </div>
+      <div style="text-align:right;">
+        <span class="tbl-badge" id="custTableBadge">TABLE 5</span>
+        <p class="tbl-state" id="custTableLiveState">● READY TO ORDER</p>
+      </div>
+    </div>
+
+    <div class="sub-tabs">
+      <button onclick="switchCustTab('menu')" id="tabMenu" class="sub-tab active">🍽️ Menu</button>
+      <button onclick="switchCustTab('wait')" id="tabWait" class="sub-tab">⏱️ Status</button>
+      <button onclick="switchCustTab('call')" id="tabCall" class="sub-tab">🔔 Waiter</button>
+      <button onclick="switchCustTab('pay')" id="tabPay" class="sub-tab">💳 Bill</button>
+    </div>
+
+    <section id="custSecMenu" class="sec-pad">
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="menuSearch" onkeyup="renderMenu()" placeholder="Search dishes, coffee, snacks...">
+      </div>
+      <div class="cat-row" id="categoryPills">
+        <button onclick="setCategory('All')" class="cat-pill active">All</button>
+        <button onclick="setCategory('Starters')" class="cat-pill">Starters</button>
+        <button onclick="setCategory('Mains')" class="cat-pill">Mains</button>
+        <button onclick="setCategory('Breads')" class="cat-pill">Breads</button>
+        <button onclick="setCategory('Drinks')" class="cat-pill">Drinks</button>
+      </div>
+      <div id="menuList"></div>
+    </section>
+
+    <section id="custSecWait" class="sec-pad hidden">
+      <div class="card-white" style="text-align:center;">
+        <p style="font-size:11px;font-weight:800;color:#A1A1AA;" id="waitOrderHeader">TABLE 5 • YOUR ORDER STATUS</p>
+        <h2 style="font-size:22px;font-weight:800;margin-top:4px;" id="waitStatusTitle">No Active Order Yet</h2>
+        <p style="font-size:12px;color:#71717A;margin-top:4px;" id="waitStatusSub">Order from Menu to track live.</p>
+        <div class="timer-ring">
+          <span class="timer-val" id="cookingTimerDisplay">--:--</span>
+          <span class="timer-lbl" id="timerSubLabel">IDLE</span>
+        </div>
+        <div class="stepper">
+          <span id="stepOrdered">● Ordered</span>
+          <span id="stepCooking">● Cooking</span>
+          <span id="stepDining">● Ready / Dining</span>
+        </div>
+        <div class="tile-grid-3">
+          <button onclick="toggleWaitCard('wifi')" class="quick-tile"><span style="font-size:20px;">📶</span>WiFi</button>
+          <button onclick="toggleWaitCard('rewards')" class="quick-tile"><span style="font-size:20px;">🎁</span>Rewards</button>
+          <button onclick="toggleWaitCard('game')" class="quick-tile"><span style="font-size:20px;">🎮</span>Spice Quiz</button>
+        </div>
+      </div>
+
+      <div id="cardWifi" class="card-white hidden" style="text-align:center;">
+        <span style="font-size:11px;font-weight:800;color:#F97316;">FREE GUEST WIFI</span>
+        <h3 style="font-size:18px;font-weight:800;margin-top:4px;" id="displayWifiSsid">ParkSideCafe_Guest</h3>
+        <div style="background:#F5F5F4;border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;margin:12px 0;">
+          <span style="font-size:11px;font-weight:700;color:#71717A;">PASSWORD</span>
+          <span style="font-family:monospace;font-weight:800;font-size:14px;" id="displayWifiPass">parkside2026</span>
+        </div>
+        <button onclick="copyWifi()" id="copyWifiBtn" class="btn-green" style="width:100%;">Copy Password</button>
+      </div>
+
+      <div id="cardRewards" class="card-white hidden" style="background:#18181B;color:#fff;text-align:center;">
+        <span style="font-size:11px;font-weight:800;color:#FB923C;">TABLE LOYALTY POINTS</span>
+        <h3 style="font-size:28px;font-weight:800;margin:8px 0;"><span id="rewardPointsVal">150</span> PTS</h3>
+        <p style="font-size:12px;color:#A1A1AA;">+50 PTS sahi jawab, -20 PTS galat jawab!</p>
+      </div>
+
+      <div id="cardGame" class="card-white hidden" style="background:#18181B;color:#fff;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:11px;font-weight:800;color:#FB923C;">🎮 SPICE QUIZ (<span id="quizQNum">1</span>/10)</span>
+          <span style="font-size:11px;background:#27272A;padding:4px 10px;border-radius:99px;font-weight:800;">Points: <span id="quizScore" style="color:#34D399;">0</span></span>
+        </div>
+        <p style="font-size:14px;font-weight:700;margin-bottom:12px;" id="quizQuestionText"></p>
+        <div id="quizOptionsBox"></div>
+        <p id="quizFeedbackMsg" class="hidden" style="font-size:12px;font-weight:800;margin-top:8px;padding:8px 10px;border-radius:10px;text-align:center;"></p>
+      </div>
+    </section>
+
+    <section id="custSecCall" class="sec-pad hidden">
+      <div class="card-white" style="text-align:center;">
+        <p style="font-size:11px;font-weight:800;color:#A1A1AA;" id="callTableLabel">TABLE 5</p>
+        <h2 style="font-size:22px;font-weight:800;margin-top:4px;">Need <span style="color:#F97316;">something?</span></h2>
+        <button onclick="triggerWaiterCall('Assistance')" class="pulse-circle"><span style="font-size:28px;margin-bottom:4px;">🔔</span><span>Call waiter</span></button>
+        <div class="tile-grid-3">
+          <button onclick="triggerWaiterCall('Water')" class="quick-tile">💧 Water</button>
+          <button onclick="triggerWaiterCall('Napkins')" class="quick-tile">🧻 Napkins</button>
+          <button onclick="triggerWaiterCall('Bill')" class="quick-tile">🧾 Bill</button>
+        </div>
+        <p id="waiterCallFeedback" class="hidden" style="margin-top:14px;font-size:12px;font-weight:700;color:#059669;background:#ECFDF5;padding:8px;border-radius:10px;">✓ Alert sent to Staff!</p>
+      </div>
+    </section>
+
+    <section id="custSecPay" class="sec-pad hidden">
+      <div id="billCard" class="card-white">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #F5F5F4;padding-bottom:12px;">
+          <div>
+            <p style="font-size:10px;font-weight:800;color:#F97316;" id="billTableHeader">TABLE 5 • YOUR PERSONAL BILL</p>
+            <h2 style="font-size:20px;font-weight:800;">Your Order Bill</h2>
+            <p style="font-size:11px;font-weight:700;color:#71717A;" id="billCustNameLabel"></p>
+          </div>
+          <button onclick="toggleSplitBill()" style="background:#F5F5F4;border:1px solid #E7E5E4;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;">👥 Split (2)</button>
+        </div>
+        <div id="billItemsList" style="padding:14px 0;border-bottom:1px solid #F5F5F4;font-size:13px;"></div>
+        <div id="splitBoxes" class="hidden" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0;">
+          <div style="background:#FAFAF9;border:1px solid #E7E5E4;border-radius:14px;padding:10px;text-align:center;"><p style="font-size:10px;font-weight:800;color:#71717A;">GUEST 1</p><p style="font-size:18px;font-weight:800;" id="splitAmt1">₹0</p></div>
+          <div style="background:#FAFAF9;border:1px solid #E7E5E4;border-radius:14px;padding:10px;text-align:center;"><p style="font-size:10px;font-weight:800;color:#71717A;">GUEST 2</p><p style="font-size:18px;font-weight:800;" id="splitAmt2">₹0</p></div>
+        </div>
+        <div style="margin-top:14px;">
+          <p style="font-size:10px;font-weight:800;color:#A1A1AA;margin-bottom:6px;">ADD TIP</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            <button onclick="setTip(0)" class="tip-btn" style="padding:8px;border-radius:10px;background:#F5F5F4;font-size:12px;font-weight:700;">0%</button>
+            <button onclick="setTip(5)" class="tip-btn" style="padding:8px;border-radius:10px;background:#F5F5F4;font-size:12px;font-weight:700;">5%</button>
+            <button onclick="setTip(10)" class="tip-btn" style="padding:8px;border-radius:10px;background:#18181B;color:#fff;font-size:12px;font-weight:700;">10%</button>
+            <button onclick="setTip(15)" class="tip-btn" style="padding:8px;border-radius:10px;background:#F5F5F4;font-size:12px;font-weight:700;">15%</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid #E7E5E4;">
+          <span style="font-weight:700;color:#52525B;">Total Payable</span>
+          <span style="font-size:24px;font-weight:800;" id="billFinalTotal">₹0</span>
+        </div>
+        <div style="margin-top:16px;">
+          <button onclick="completePayment('UPI / GPay')" class="pay-row"><span>📱 Google Pay / UPI</span><span style="color:#F97316;">→</span></button>
+          <button onclick="completePayment('Card')" class="pay-row"><span>💳 Credit / Debit Card</span><span style="color:#F97316;">→</span></button>
+          <button onclick="completePayment('Cash')" class="pay-row"><span>💵 Cash at Counter / Table</span><span style="color:#F97316;">→</span></button>
+        </div>
+      </div>
+
+      <div id="receiptReviewCard" class="card-white hidden" style="text-align:center;">
+        <div style="background:#FAFAF9;border:1px dashed #D6D3D1;border-radius:16px;padding:16px;">
+          <p style="font-weight:800;font-size:18px;" id="receiptRestName">Park Side Cafe.</p>
+          <p style="font-size:11px;color:#EA580C;font-weight:800;margin-top:2px;" id="receiptBillSerial">BILL #1</p>
+          <p style="font-size:10px;color:#71717A;font-weight:800;margin-top:2px;" id="receiptMeta">TABLE 5 • PAID</p>
+          <p style="font-size:26px;font-weight:800;margin:8px 0;" id="receiptPaidAmount">₹0</p>
+          <span style="background:#D1FAE5;color:#047857;font-size:11px;font-weight:800;padding:4px 12px;border-radius:99px;">PAID ✓</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="floatingCartBar" class="float-bar hidden">
+      <div>
+        <p style="font-size:10px;font-weight:800;color:#FB923C;"><span id="cartTableTag">TABLE 5</span> • <span id="cartCount">0</span> ITEMS</p>
+        <p style="font-size:18px;font-weight:800;" id="cartTotal">₹0</p>
+      </div>
+      <button onclick="initiatePlaceOrder()" style="background:#F97316;color:#fff;font-weight:800;font-size:13px;padding:10px 18px;border-radius:12px;">Place Order →</button>
+    </div>
+  </main>
+
+  <div id="dishModal" class="modal-bg hidden">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><span style="font-size:32px;" id="modalDishEmoji">🍛</span><h3 style="font-size:20px;font-weight:800;margin-top:4px;" id="modalDishName">Dish</h3><p style="font-size:12px;color:#71717A;" id="modalDishDesc"></p></div>
+        <button onclick="closeDishModal()" style="width:30px;height:30px;border-radius:50%;background:#F5F5F4;font-weight:800;">✕</button>
+      </div>
+      <div style="background:#FAFAF9;border:1px solid #E7E5E4;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;font-size:12px;margin:14px 0;"><span style="font-weight:700;color:#71717A;">ALLERGENS</span><span style="font-weight:800;" id="modalDishAllergens"></span></div>
+      <p style="font-size:10px;font-weight:800;color:#71717A;margin-bottom:6px;">SPICE LEVEL</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
+        <button onclick="selectModalSpice('Mild')" class="modal-spice-btn" style="padding:8px;border-radius:10px;border:1px solid #E7E5E4;font-size:12px;font-weight:700;">🌶️ Mild</button>
+        <button onclick="selectModalSpice('Medium')" class="modal-spice-btn" style="padding:8px;border-radius:10px;border:1px solid #F97316;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;">🌶️🌶️ Medium</button>
+        <button onclick="selectModalSpice('Spicy')" class="modal-spice-btn" style="padding:8px;border-radius:10px;border:1px solid #E7E5E4;font-size:12px;font-weight:700;">🌶️🌶️🌶️ Spicy</button>
+      </div>
+      <p style="font-size:10px;font-weight:800;color:#71717A;margin-bottom:6px;">PORTION SIZE</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">
+        <button onclick="selectModalSize('Half')" id="btnSizeHalf" style="padding:8px;border-radius:10px;border:1px solid #E7E5E4;font-size:12px;font-weight:700;">Half</button>
+        <button onclick="selectModalSize('Full')" id="btnSizeFull" style="padding:8px;border-radius:10px;background:#18181B;color:#fff;font-size:12px;font-weight:700;">Full</button>
+      </div>
+      <label style="display:flex;justify-content:space-between;align-items:center;background:#FFF7ED;border:1px solid #FED7AA;padding:10px 12px;border-radius:12px;margin-bottom:14px;cursor:pointer;">
+        <span style="font-size:12px;font-weight:700;"><input type="checkbox" id="modalDealCheck" onchange="updateModalPrice()"> 🥭 Combo: Add Mango Lassi</span>
+        <span style="font-size:12px;font-weight:800;color:#EA580C;">+ ₹99</span>
+      </label>
+      <button onclick="confirmAddToCart()" class="btn-primary">Add to <span id="modalTableLabel">Table 5</span> • <span id="modalFinalPrice">₹320</span></button>
+    </div>
+  </div>
+
+  <main id="staffView" class="staff-wrap hidden">
+    <div class="dark-card kpi-row">
+      <div>
+        <p style="font-size:11px;font-weight:800;color:#10B981;">● LIVE FLOOR & COUNTER MONITOR</p>
+        <h2 style="font-size:20px;font-weight:800;margin-top:4px;" id="staffRestTitle">Park Side Cafe Command Center</h2>
+        <p style="font-size:12px;color:#A1A1AA;margin-top:2px;" id="staffLiveDateDisplay"></p>
+      </div>
+      <div class="kpi-nums">
+        <div><p class="kpi-lbl">PENDING ORDERS</p><p class="kpi-val" style="color:#F87171;" id="kpiPendingOrdersCount">0</p></div>
+        <div><p class="kpi-lbl">ACTIVE / DINING</p><p class="kpi-val" style="color:#34D399;" id="kpiOccupiedCount">0/17</p></div>
+        <div><p class="kpi-lbl">UNPAID BILLS</p><p class="kpi-val" style="color:#FBBF24;" id="kpiUnpaidTotal">₹0</p></div>
+        <div><p class="kpi-lbl">TODAY SALES</p><p class="kpi-val" style="color:#F97316;" id="kpiSalesTotal">₹0</p></div>
+        <div><button onclick="lockStaffAndOwner()" style="background:#27272A;color:#E4E4E7;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:700;">🔒 Lock</button></div>
+      </div>
+    </div>
+
+    <div class="staff-grid">
+      <div class="dark-card">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><h3 style="font-size:12px;font-weight:800;color:#A1A1AA;">COUNTER + 16 TABLES</h3><span style="font-size:11px;color:#34D399;font-weight:700;">● LIVE</span></div>
+        <div class="floor-grid" id="floorMapGrid"></div>
+      </div>
+      <div class="dark-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:12px;font-weight:800;color:#A1A1AA;">🔔 INCOMING ORDERS</h3><span id="staffIncomingCounterPill" style="background:#EF4444;color:#fff;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;">0 Orders</span></div>
+        <div id="staffIncomingOrders"></div>
+      </div>
+    </div>
+
+    <div class="dark-card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:12px;"><h3 style="font-size:12px;font-weight:800;color:#A1A1AA;">KITCHEN DISPLAY (KDS)</h3><span style="font-size:11px;color:#FB923C;font-weight:700;">LIVE TIMERS</span></div>
+      <div class="kds-grid">
+        <div class="kds-col"><p style="font-size:12px;font-weight:800;color:#FB923C;border-bottom:1px solid #27272A;padding-bottom:8px;margin-bottom:10px;">🔥 STARTERS & BREADS</p><div id="kdsStation1"></div></div>
+        <div class="kds-col"><p style="font-size:12px;font-weight:800;color:#FB923C;border-bottom:1px solid #27272A;padding-bottom:8px;margin-bottom:10px;">🍲 MAINS</p><div id="kdsStation2"></div></div>
+        <div class="kds-col"><p style="font-size:12px;font-weight:800;color:#FB923C;border-bottom:1px solid #27272A;padding-bottom:8px;margin-bottom:10px;">🥤 DRINKS</p><div id="kdsStation3"></div></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="tableManageModal" class="modal-bg hidden">
+    <div class="modal-box modal-dark" style="max-width:430px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #27272A;padding-bottom:10px;">
+        <div><p style="font-size:11px;font-weight:800;color:#FB923C;" id="tmStatusLabel">STATUS</p><h3 style="font-size:22px;font-weight:800;" id="tmTitle">Table</h3><p style="font-size:12px;color:#38BDF8;font-weight:700;" id="tmCustomerLabel"></p></div>
+        <button onclick="closeTableModal()" style="width:30px;height:30px;border-radius:50%;background:#27272A;color:#A1A1AA;font-weight:800;">✕</button>
+      </div>
+      <div id="tmGuestSelectorBox" class="hidden" style="margin-top:10px;"><p style="font-size:10px;font-weight:800;color:#A1A1AA;margin-bottom:6px;">SELECT CUSTOMER:</p><div id="tmGuestPills" style="display:flex;flex-wrap:wrap;gap:6px;"></div></div>
+      <div id="tmItemsList" style="background:#09090B;border:1px solid #27272A;border-radius:14px;padding:12px;margin:12px 0;max-height:170px;overflow-y:auto;font-size:12px;"></div>
+      <div style="background:#27272A;border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div><p style="font-size:10px;font-weight:800;color:#A1A1AA;" id="tmBillLabel">BILL</p><p style="font-size:20px;font-weight:800;" id="tmTotalBill">₹0</p></div>
+        <span id="tmPayBadge" style="padding:4px 10px;border-radius:99px;font-size:11px;font-weight:800;">UNPAID</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button onclick="staffMarkDining()" style="background:#0284C7;color:#fff;padding:10px;border-radius:12px;font-size:12px;font-weight:700;">🍽️ Mark Dining</button>
+        <button onclick="staffMarkPaid()" class="btn-green">💵 Mark PAID</button>
+      </div>
+      <button onclick="clearSelectedGuestOrTable()" class="btn-red" style="width:100%;" id="tmClearBtn">🧹 Clear Guest</button>
+    </div>
+  </div>
+
+  <main id="adminView" class="admin-wrap hidden">
+    <div class="owner-nav no-print">
+      <button onclick="switchOwnerTab('reports')" id="ownerTabReports" class="owner-tab active">📊 Sales Reports</button>
+      <button onclick="switchOwnerTab('qrcodes')" id="ownerTabQrcodes" class="owner-tab">📲 Counter + 16 QRs</button>
+      <button onclick="switchOwnerTab('menu')" id="ownerTabMenu" class="owner-tab">🍽️ Menu Manager</button>
+      <button onclick="switchOwnerTab('settings')" id="ownerTabSettings" class="owner-tab">⚙️ PINs & Branding</button>
+    </div>
+
+    <section id="ownerSecReports" class="card-white">
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
+        <div><h2 style="font-size:20px;font-weight:800;">📊 Sales Reports (Serial Bill ID: 1, 2, 3...)</h2><p style="font-size:12px;color:#71717A;">Ordered serially by payment settlement.</p></div>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="downloadReportExcelFile()" class="btn-green">📥 Excel (.xls)</button>
+          <button onclick="downloadReportPDFFile()" class="btn-red">📄 PDF (.pdf)</button>
+          <button onclick="downloadReportWordFile()" style="background:#2563EB;color:#fff;font-weight:700;font-size:12px;padding:10px 14px;border-radius:12px;">📝 Word (.doc)</button>
+        </div>
+      </div>
+
+      <div class="rep-pills no-print">
+        <button onclick="setReportPeriod('daily')" id="repBtnDaily" class="rep-pill active">📅 Today</button>
+        <button onclick="setReportPeriod('3months')" id="repBtn3Months" class="rep-pill">🗓️ Last 3 Months</button>
+        <button onclick="setReportPeriod('yearly')" id="repBtnYearly" class="rep-pill">📆 Full Year</button>
+        <button onclick="setReportPeriod('custom')" id="repBtnCustom" class="rep-pill">🔍 Custom</button>
+      </div>
+
+      <div id="customDateRow" class="hidden no-print" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#FAFAF9;padding:12px;border-radius:14px;border:1px solid #E7E5E4;margin-bottom:14px;">
+        <div><label style="font-size:10px;font-weight:800;color:#71717A;display:block;margin-bottom:4px;">FROM</label><input type="date" id="repStartDate" onchange="renderReports()" class="inp"></div>
+        <div><label style="font-size:10px;font-weight:800;color:#71717A;display:block;margin-bottom:4px;">TO</label><input type="date" id="repEndDate" onchange="renderReports()" class="inp"></div>
+      </div>
+
+      <div class="rep-kpis">
+        <div class="rep-box"><p class="kpi-lbl">REVENUE</p><p style="font-size:20px;font-weight:800;margin-top:4px;" id="repTotalRev">₹0</p></div>
+        <div class="rep-box"><p class="kpi-lbl">TOTAL BILLS</p><p style="font-size:20px;font-weight:800;color:#F97316;margin-top:4px;" id="repTotalOrders">0</p></div>
+        <div class="rep-box"><p class="kpi-lbl">TIPS</p><p style="font-size:20px;font-weight:800;color:#059669;margin-top:4px;" id="repTotalTips">₹0</p></div>
+        <div class="rep-box"><p class="kpi-lbl">TOP DISH</p><p style="font-size:14px;font-weight:800;margin-top:8px;" id="repTopDish">—</p></div>
+      </div>
+
+      <div style="background:#18181B;color:#fff;border-radius:14px;padding:12px 16px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:14px;">
+        <span style="font-weight:800;color:#A1A1AA;">PAYMENT BREAKDOWN:</span>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-weight:700;">
+          <span style="color:#34D399;">📱 UPI: <strong id="repPayUpi">₹0</strong></span>
+          <span style="color:#38BDF8;">💳 Card: <strong id="repPayCard">₹0</strong></span>
+          <span style="color:#FBBF24;">💵 Cash: <strong id="repPayCash">₹0</strong></span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bill ID</th><th>Date & Time</th><th>Spot</th><th>Customer</th><th>Items</th><th>Mode</th><th style="text-align:right;">Tip</th><th style="text-align:right;">Total</th></tr></thead>
+          <tbody id="reportTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ownerSecQrcodes" class="card-white hidden">
+      <h2 style="font-size:20px;font-weight:800;">📲 Counter Pickup + 16 Table QR Codes</h2>
+      <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:16px;padding:14px;margin:14px 0;">
+        <label style="font-size:11px;font-weight:800;color:#9A3412;display:block;margin-bottom:6px;">🌐 LIVE WEBSITE URL</label>
+        <input type="text" id="qrBaseUrlInput" oninput="renderTableQRCodes()" placeholder="https://park-side-cafe.netlify.app" class="inp">
+      </div>
+      <div class="qr-grid" id="qrCodesGrid"></div>
+    </section>
+
+    <section id="ownerSecMenu" class="card-white hidden">
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:12px;">🍽️ Menu Manager</h2>
+      <div class="form-grid" style="margin-bottom:12px;">
+        <input type="text" id="newDishName" placeholder="Dish Name" class="inp">
+        <input type="number" id="newDishPrice" placeholder="Price (₹)" class="inp">
+        <select id="newDishCat" class="inp"><option value="Starters">Starters</option><option value="Mains" selected>Mains</option><option value="Breads">Breads</option><option value="Drinks">Drinks</option></select>
+        <input type="text" id="newDishEmoji" placeholder="Emoji" value="🍽️" class="inp">
+        <input type="text" id="newDishDesc" placeholder="Description" class="inp" style="grid-column:1/-1;">
+        <input type="text" id="newDishAllergens" placeholder="Allergens" value="Dairy" class="inp" style="grid-column:1/-1;">
+      </div>
+      <button onclick="addNewMenuItem()" class="btn-primary" style="width:auto;padding:11px 20px;">+ Add Dish</button>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid #E7E5E4;"><div id="adminMenuList"></div></div>
+    </section>
+
+    <section id="ownerSecSettings" class="card-white hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div><h2 style="font-size:20px;font-weight:800;">⚙️ PINs & Branding</h2></div>
+        <button onclick="lockStaffAndOwner()" style="background:#E7E5E4;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;">🔒 Lock Now</button>
+      </div>
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div><label style="font-size:11px;font-weight:700;display:block;margin-bottom:4px;">Restaurant Name</label><input type="text" id="adminRestName" class="inp"></div>
+        <div><label style="font-size:11px;font-weight:700;display:block;margin-bottom:4px;">City / Tagline</label><input type="text" id="adminRestCity" class="inp"></div>
+        <div><label style="font-size:11px;font-weight:700;display:block;margin-bottom:4px;">Guest WiFi SSID</label><input type="text" id="adminWifiSsid" class="inp"></div>
+        <div><label style="font-size:11px;font-weight:700;display:block;margin-bottom:4px;">Guest WiFi Password</label><input type="text" id="adminWifiPass" class="inp"></div>
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;padding:12px;border-radius:14px;"><label style="font-size:12px;font-weight:800;color:#1E40AF;display:block;margin-bottom:6px;">🧑‍🍳 Staff PIN (4 Digits)</label><input type="text" id="adminStaffPinCode" maxlength="4" inputmode="numeric" class="inp" style="font-weight:800;letter-spacing:0.2em;"></div>
+        <div style="background:#FFF7ED;border:1px solid #FED7AA;padding:12px;border-radius:14px;"><label style="font-size:12px;font-weight:800;color:#9A3412;display:block;margin-bottom:6px;">👑 Owner PIN (4 Digits)</label><input type="text" id="adminOwnerPinCode" maxlength="4" inputmode="numeric" class="inp" style="font-weight:800;letter-spacing:0.2em;"></div>
+      </div>
+      <button onclick="saveRestaurantSettings()" class="btn-dark">💾 Save Settings</button>
+    </section>
+  </main>
+
+  <script>
+    const DINING_TABLES = Array.from({ length: 16 }, function(_, i) { return 'T' + (i + 1); });
+    const ALL_SPOTS = ['COUNTER'].concat(DINING_TABLES);
+
+    function getSpotDisplayName(spotId) {
+      return spotId === 'COUNTER' ? 'Counter Pickup' : ('Table ' + spotId.replace('T', '').padStart(2, '0'));
+    }
+    function getSpotShortBadge(spotId) {
+      return spotId === 'COUNTER' ? 'COUNTER PICKUP' : ('TABLE ' + spotId.replace('T', ''));
+    }
+
+    const defaultConfig = { name: "Park Side Cafe", city: "KOLKATA • DINE-IN & TAKEAWAY", wifiSsid: "ParkSideCafe_Guest", wifiPass: "parkside2026", staffPin: "1111", ownerPin: "1234" };
+    const defaultMenu = [
+      { id: 1, name: "Paneer Makhani", cat: "Mains", price: 320, emoji: "🍛", desc: "Cottage cheese in rich tomato-butter gravy", allergens: "Dairy • Nuts" },
+      { id: 2, name: "Dal Makhani", cat: "Mains", price: 280, emoji: "🍲", desc: "Slow-cooked black lentils with cream", allergens: "Dairy" },
+      { id: 3, name: "Veg Biryani", cat: "Mains", price: 300, emoji: "🍚", desc: "Aromatic basmati rice with raita", allergens: "Dairy" },
+      { id: 4, name: "Garlic Naan", cat: "Breads", price: 70, emoji: "🫓", desc: "Freshly baked tandoor bread", allergens: "Gluten • Dairy" },
+      { id: 5, name: "Paneer Tikka", cat: "Starters", price: 260, emoji: "🍢", desc: "Chargrilled spiced cottage cheese", allergens: "Dairy" },
+      { id: 6, name: "Mango Lassi", cat: "Drinks", price: 120, emoji: "🥭", desc: "Chilled Alphonso mango yogurt drink", allergens: "Dairy" },
+      { id: 7, name: "Masala Chai", cat: "Drinks", price: 60, emoji: "☕", desc: "Ginger & cardamom brewed tea", allergens: "Dairy" }
+    ];
+
+    const quizQuestions = [
+      { q: "Which spice gives Rogan Josh its deep red color?", opts: ["A) Kashmiri Mirch & Ratan Jot", "B) Turmeric & Mustard"], ans: 0 },
+      { q: "Which spice is known as Queen of Spices in chai?", opts: ["A) Black Pepper", "B) Green Cardamom (Elaichi)"], ans: 1 },
+      { q: "Main base of Paneer Makhani gravy?", opts: ["A) Tomato, Butter & Cashew", "B) Spinach & Coconut"], ans: 0 },
+      { q: "Fresh herb sprinkled on Garlic Naan?", opts: ["A) Mint Leaves", "B) Fresh Coriander"], ans: 1 },
+      { q: "Alphonso mangoes are famous in which state?", opts: ["A) Maharashtra", "B) Punjab"], ans: 0 },
+      { q: "Spice giving Biryani golden aroma?", opts: ["A) Saffron (Kesar)", "B) Asafoetida (Hing)"], ans: 0 },
+      { q: "Dal Makhani is simmered with?", opts: ["A) Black Urad & Kidney Beans", "B) Yellow Moong Dal"], ans: 0 },
+      { q: "Smoky flavor in Paneer Tikka comes from?", opts: ["A) Roasted Cumin & Kasuri Methi", "B) Cinnamon & Clove"], ans: 0 },
+      { q: "Equal parts espresso, steamed milk & foam?", opts: ["A) Americano", "B) Cappuccino"], ans: 1 },
+      { q: "Cooling side served with Veg Biryani?", opts: ["A) Mint Boondi Raita", "B) Tartar Sauce"], ans: 0 }
+    ];
+
+    function safeGet(k, fb) { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch (e) { return fb; } }
+    function safeSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    function getLocalDateStr(offset) {
+      const d = new Date();
+      if (offset) d.setDate(d.getDate() - offset);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    let appConfig = safeGet('pscConfigFinal', defaultConfig);
+    let menuItems = safeGet('pscMenuFinal', defaultMenu);
+    let salesLedger = safeGet('pscLedgerFinal', [
+      { billNo: 1, date: getLocalDateStr(0), time: "01:15 PM", table: "T1", customer: "Vikram Singh", items: ["Paneer Makhani", "Garlic Naan x2"], subtotal: 460, tip: 46, total: 506, mode: "UPI / GPay" },
+      { billNo: 2, date: getLocalDateStr(0), time: "02:30 PM", table: "COUNTER", customer: "Ananya Paul", items: ["Veg Biryani", "Mango Lassi"], subtotal: 420, tip: 40, total: 460, mode: "Cash" }
+    ]);
+
+    let currentReportPeriod = 'daily';
+    let tables = {};
+    ALL_SPOTS.forEach(function(t) { tables[t] = { cart: [], guests: [], alertReason: '' }; });
+
+    let myDeviceGuestId = safeGet('pscGuestIdFinal', null);
+    if (!myDeviceGuestId) {
+      myDeviceGuestId = 'G-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+      safeSet('pscGuestIdFinal', myDeviceGuestId);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const scannedParam = urlParams.get('table');
+    const isQrLocked = Boolean(scannedParam && ALL_SPOTS.indexOf(scannedParam.toUpperCase()) !== -1);
+    let currentTable = isQrLocked ? scannedParam.toUpperCase() : "T5";
+
+    let currentCategory = "All", pendingStaffOrders = [], kdsItems = [], authRole = null, pendingTargetView = null;
+    let selectedFloorTable = null, selectedModalGuestIdx = 0, selectedDish = null, modalSpice = "Medium", modalSize = "Full";
+    let toastTimer = null, ringTimer = null, quizIndex = 0, quizScore = 0, currentExportCopyText = "";
+
+    function getMyGuestSession(spotId) {
+      const tObj = tables[spotId];
+      return tObj ? (tObj.guests.find(function(g) { return g.sessionId === myDeviceGuestId; }) || null) : null;
+    }
+
+    var ringAudioEl = null;
+    function buildRingWavUrl() {
+      var sampleRate = 8000;
+      var duration = 0.55;
+      var numSamples = Math.floor(sampleRate * duration);
+      var buffer = new ArrayBuffer(44 + numSamples);
+      var view = new DataView(buffer);
+      function writeStr(off, s) { for (var i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + numSamples, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate, true);
+      view.setUint16(32, 1, true);
+      view.setUint16(34, 8, true);
+      writeStr(36, 'data');
+      view.setUint32(40, numSamples, true);
+      for (var n = 0; n < numSamples; n++) {
+        var t = n / sampleRate;
+        var pulse = (t < 0.22 || (t > 0.28 && t < 0.50)) ? 1 : 0;
+        var wave = Math.sin(2 * Math.PI * 950 * t) * 0.5 + Math.sin(2 * Math.PI * 1260 * t) * 0.5;
+        view.setUint8(44 + n, Math.floor(128 + pulse * wave * 90));
+      }
+      var bytes = new Uint8Array(buffer);
+      var bin = '';
+      for (var b = 0; b < bytes.length; b++) bin += String.fromCharCode(bytes[b]);
+      return 'data:audio/wav;base64,' + btoa(bin);
+    }
+
+    function playSingleRingTone() {
+      try {
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        if (!ringAudioEl) {
+          ringAudioEl = new Audio(buildRingWavUrl());
+          ringAudioEl.preload = 'auto';
+        }
+        ringAudioEl.currentTime = 0;
+        var p = ringAudioEl.play();
+        if (p && p.catch) p.catch(function() {});
+      } catch (e) {}
+    }
+
+    function triggerLiveNotification(title, message) {
+      updateStaffOrderBadges();
+      document.getElementById('toastHeader').innerText = title;
+      document.getElementById('toastBody').innerText = message;
+      document.getElementById('liveOrderToast').classList.remove('hidden');
+      if (ringTimer) clearInterval(ringTimer);
+      playSingleRingTone();
+      ringTimer = setInterval(playSingleRingTone, 650);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(closeLiveToast, 5000);
+    }
+
+    function closeLiveToast() {
+      if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
+      if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+      document.getElementById('liveOrderToast').classList.add('hidden');
+    }
+
+    function dismissToastAndOpenStaff() { closeLiveToast(); requestPinAccess('staff'); }
+
+    function updateStaffOrderBadges() {
+      const count = pendingStaffOrders.length;
+      const b = document.getElementById('staffOrderCountBadge');
+      if (b) { b.innerText = count; b.classList.toggle('hidden', count === 0); }
+      const k = document.getElementById('kpiPendingOrdersCount');
+      if (k) k.innerText = count;
+      const p = document.getElementById('staffIncomingCounterPill');
+      if (p) { p.innerText = count + (count === 1 ? ' Order' : ' Orders'); p.style.background = count > 0 ? '#EF4444' : '#3F3F46'; }
+    }
+
+    function startRealTimeEngine() {
+      function tick() {
+        const now = new Date();
+        const tStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dStr = now.toLocaleDateString([], { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+        const cEl = document.getElementById('liveSystemClock');
+        if (cEl) cEl.innerText = tStr;
+        const sEl = document.getElementById('staffLiveDateDisplay');
+        if (sEl) sEl.innerText = dStr + ' • ' + tStr;
+
+        const myS = getMyGuestSession(currentTable);
+        if (myS && (myS.status === 'ORDERING' || myS.status === 'COOKING') && myS.prepEndTime) {
+          const diff = Math.max(0, Math.floor((myS.prepEndTime - Date.now()) / 1000));
+          const tm = document.getElementById('cookingTimerDisplay');
+          if (tm) tm.innerText = String(Math.floor(diff / 60)).padStart(2, '0') + ':' + String(diff % 60).padStart(2, '0');
+        }
+        document.querySelectorAll('.kds-live-timer').forEach(function(el) {
+          const st = parseInt(el.getAttribute('data-start'), 10);
+          if (st) {
+            const elp = Math.max(0, Math.floor((Date.now() - st) / 1000));
+            el.innerText = String(Math.floor(elp / 60)).padStart(2, '0') + ':' + String(elp % 60).padStart(2, '0');
+          }
+        });
+      }
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    function setupTableSelectorOrLock() {
+      const sel = document.getElementById('tableSelector');
+      const badge = document.getElementById('qrLockedTableBadge');
+      if (isQrLocked) {
+        sel.classList.add('hidden'); badge.classList.remove('hidden'); badge.innerText = '🔒 ' + getSpotShortBadge(currentTable);
+      } else {
+        sel.classList.remove('hidden'); badge.classList.add('hidden');
+        sel.innerHTML = ALL_SPOTS.map(function(sp) {
+          return '<option value="' + sp + '"' + (sp === currentTable ? ' selected' : '') + '>' + (sp === 'COUNTER' ? '🛍️ Counter Pickup' : ('Table ' + sp.replace('T', '').padStart(2, '0'))) + '</option>';
+        }).join('');
+      }
+    }
+
+    function init() {
+      document.getElementById('qrBaseUrlInput').value = window.location.href.indexOf('http') === 0 ? window.location.href.split('?')[0] : 'https://park-side-cafe.netlify.app';
+      setupTableSelectorOrLock(); applyBranding(); syncTableUI(); renderMenu(); renderQuizQuestion();
+      renderFloorMap(); renderStaffIncoming(); renderKDS(); renderAdminMenu(); renderReports(); renderTableQRCodes();
+      updateStaffOrderBadges(); startRealTimeEngine();
+    }
+
+    function applyBranding() {
+      document.getElementById('topBrandName').innerText = appConfig.name.toUpperCase() + " OS";
+      document.getElementById('custRestName').innerHTML = appConfig.name + '<span>.</span>';
+      document.getElementById('custRestCity').innerText = appConfig.city;
+      document.getElementById('receiptRestName').innerText = appConfig.name + ".";
+      document.getElementById('staffRestTitle').innerText = appConfig.name + " Command Center";
+      document.getElementById('displayWifiSsid').innerText = appConfig.wifiSsid;
+      document.getElementById('displayWifiPass').innerText = appConfig.wifiPass;
+      document.getElementById('adminRestName').value = appConfig.name;
+      document.getElementById('adminRestCity').value = appConfig.city;
+      document.getElementById('adminWifiSsid').value = appConfig.wifiSsid;
+      document.getElementById('adminWifiPass').value = appConfig.wifiPass;
+      document.getElementById('adminStaffPinCode').value = appConfig.staffPin;
+      document.getElementById('adminOwnerPinCode').value = appConfig.ownerPin;
+    }
+
+    function requestPinAccess(v) {
+      if (v === 'staff' && (authRole === 'staff' || authRole === 'owner')) return switchMainView('staff');
+      if (v === 'admin' && authRole === 'owner') return switchMainView('admin');
+      pendingTargetView = v;
+      document.getElementById('pinModalTitle').innerText = v === 'admin' ? "👑 Owner Access" : "🧑‍🍳 Staff Access";
+      document.getElementById('pinModalHint').innerText = v === 'admin' ? "Enter 4-digit Owner PIN (Default: 1234)" : "Enter 4-digit Staff PIN (Default: 1111)";
+      document.getElementById('pinInput').value = "";
+      document.getElementById('pinErrorMsg').classList.add('hidden');
+      document.getElementById('pinModal').classList.remove('hidden');
+      setTimeout(function() { document.getElementById('pinInput').focus(); }, 100);
+    }
+    function closePinModal() { document.getElementById('pinModal').classList.add('hidden'); pendingTargetView = null; }
+    function verifyPin() {
+      const p = document.getElementById('pinInput').value.trim();
+      if (pendingTargetView === 'admin') {
+        if (p === appConfig.ownerPin) { authRole = 'owner'; updateAuthButtonsUI(); closePinModal(); switchMainView('admin'); }
+        else { document.getElementById('pinErrorMsg').classList.remove('hidden'); }
+      } else {
+        if (p === appConfig.staffPin || p === appConfig.ownerPin) { authRole = (p === appConfig.ownerPin) ? 'owner' : 'staff'; updateAuthButtonsUI(); closePinModal(); switchMainView('staff'); }
+        else { document.getElementById('pinErrorMsg').classList.remove('hidden'); }
+      }
+    }
+    function updateAuthButtonsUI() {
+      document.getElementById('btnViewStaff').innerHTML = (authRole ? '🔓 Staff' : '🔒 Staff') + ' <span id="staffOrderCountBadge" class="notif-badge hidden">0</span>';
+      document.getElementById('btnViewAdmin').innerHTML = (authRole === 'owner' ? '🔓 Owner' : '🔒 Owner');
+      updateStaffOrderBadges();
+    }
+    function lockStaffAndOwner() { authRole = null; updateAuthButtonsUI(); switchMainView('customer'); }
+
+    function switchMainView(v) {
+      ['customerView', 'staffView', 'adminView'].forEach(function(id) { document.getElementById(id).classList.add('hidden'); });
+      ['btnViewCustomer', 'btnViewStaff', 'btnViewAdmin'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+      if (v === 'customer') { document.getElementById('customerView').classList.remove('hidden'); document.getElementById('btnViewCustomer').classList.add('active'); document.body.classList.remove('dark-mode'); syncTableUI(); }
+      else if (v === 'staff') { closeLiveToast(); document.getElementById('staffView').classList.remove('hidden'); document.getElementById('btnViewStaff').classList.add('active'); document.body.classList.add('dark-mode'); renderFloorMap(); renderStaffIncoming(); renderKDS(); updateStaffOrderBadges(); }
+      else { document.getElementById('adminView').classList.remove('hidden'); document.getElementById('btnViewAdmin').classList.add('active'); document.body.classList.remove('dark-mode'); renderReports(); renderTableQRCodes(); }
+    }
+
+    function switchOwnerTab(t) {
+      ['ownerSecQrcodes', 'ownerSecReports', 'ownerSecMenu', 'ownerSecSettings'].forEach(function(id) { document.getElementById(id).classList.add('hidden'); });
+      ['ownerTabQrcodes', 'ownerTabReports', 'ownerTabMenu', 'ownerTabSettings'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+      if (t === 'reports') { document.getElementById('ownerSecReports').classList.remove('hidden'); document.getElementById('ownerTabReports').classList.add('active'); renderReports(); }
+      else if (t === 'qrcodes') { document.getElementById('ownerSecQrcodes').classList.remove('hidden'); document.getElementById('ownerTabQrcodes').classList.add('active'); renderTableQRCodes(); }
+      else if (t === 'menu') { document.getElementById('ownerSecMenu').classList.remove('hidden'); document.getElementById('ownerTabMenu').classList.add('active'); }
+      else { document.getElementById('ownerSecSettings').classList.remove('hidden'); document.getElementById('ownerTabSettings').classList.add('active'); }
+    }
+
+    function getTableScanUrl(spot) { return (document.getElementById('qrBaseUrlInput').value.trim() || 'https://park-side-cafe.netlify.app').split('?')[0] + '?table=' + spot; }
+
+    function drawMatrixQR(ctx, text, x, y, size) {
+      const cells = 25, cellSize = Math.floor(size / cells), actual = cellSize * cells;
+      const ox = x + Math.floor((size - actual) / 2), oy = y + Math.floor((size - actual) / 2);
+      ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x, y, size, size);
+      function isFinder(r, c) { return (r < 7 && c < 7) || (r < 7 && c >= cells - 7) || (r >= cells - 7 && c < 7); }
+      function drawFinder(sr, sc) {
+        for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+          ctx.fillStyle = (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) ? '#18181B' : '#FFFFFF';
+          ctx.fillRect(ox + (sc + c) * cellSize, oy + (sr + r) * cellSize, cellSize, cellSize);
+        }
+      }
+      let h = 2166136261;
+      for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+      for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) {
+        if (isFinder(r, c)) continue;
+        if (((h ^ Math.imul(r + 1, 73856093) ^ Math.imul(c + 1, 19349663)) >>> 0) % 3 !== 0) {
+          ctx.fillStyle = '#18181B'; ctx.fillRect(ox + c * cellSize, oy + r * cellSize, cellSize, cellSize);
+        }
+      }
+      drawFinder(0, 0); drawFinder(0, cells - 7); drawFinder(cells - 7, 0);
+    }
+
+    function renderTableQRCodes() {
+      const grid = document.getElementById('qrCodesGrid');
+      grid.innerHTML = ALL_SPOTS.map(function(spot) {
+        const isCounter = spot === 'COUNTER';
+        const badgeLabel = isCounter ? '🛍️ COUNTER PICKUP' : ('TABLE ' + spot.replace('T', '').padStart(2, '0'));
+        const fileTag = isCounter ? 'Counter_Pickup' : ('Table_' + spot.replace('T', '').padStart(2, '0'));
+        const url = getTableScanUrl(spot);
+        const cid = 'qrPrev_' + spot;
+        setTimeout(function() { const c = document.getElementById(cid); if (c) drawMatrixQR(c.getContext('2d'), url, 0, 0, c.width); }, 0);
+        return '<div class="qr-card" style="' + (isCounter ? 'background:#F3E8FF;border-color:#D8B4FE;' : '') + '">' +
+          '<span style="background:' + (isCounter ? '#6B21A8' : '#18181B') + ';color:' + (isCounter ? '#F3E8FF' : '#FB923C') + ';font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;">' + badgeLabel + '</span>' +
+          '<p style="font-weight:800;font-size:13px;margin-top:6px;">' + appConfig.name + '</p>' +
+          '<div style="background:#fff;padding:8px;border-radius:12px;border:1px solid #E7E5E4;margin:10px 0;display:flex;justify-content:center;"><canvas id="' + cid + '" width="125" height="125" style="width:115px;height:115px;display:block;"></canvas></div>' +
+          '<button onclick="downloadTableQRCard(\'' + spot + '\', \'' + fileTag + '\')" class="btn-primary" style="padding:8px;font-size:11px;">⬇️ Download PNG</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function downloadTableQRCard(spot, fileTag) {
+      const url = getTableScanUrl(spot);
+      const headerLabel = spot === 'COUNTER' ? 'COUNTER PICKUP' : ('TABLE ' + spot.replace('T', '').padStart(2, '0'));
+      const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 760;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#F7F4EF'; ctx.fillRect(0, 0, 600, 760);
+      ctx.fillStyle = '#18181B'; ctx.fillRect(0, 0, 600, 165);
+      ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(appConfig.name.toUpperCase(), 300, 72);
+      ctx.fillStyle = '#F97316'; ctx.font = 'bold 34px sans-serif'; ctx.fillText(headerLabel, 300, 130);
+      drawMatrixQR(ctx, url, 120, 210, 360);
+      ctx.fillStyle = '#18181B'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('SCAN TO VIEW MENU & ORDER', 300, 625);
+      ctx.fillStyle = '#EA580C'; ctx.font = 'bold 17px sans-serif'; ctx.fillText(url, 300, 662);
+      ctx.fillStyle = '#71717A'; ctx.font = '20px sans-serif'; ctx.fillText('WiFi: ' + appConfig.wifiSsid + ' • Pass: ' + appConfig.wifiPass, 300, 705);
+      const fileName = appConfig.name.replace(/\s+/g, '_') + '_' + fileTag + '_QR.png';
+      const dataUrl = canvas.toDataURL('image/png');
+
+      try {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {}
+
+      currentExportCopyText = headerLabel + ' QR Link: ' + url;
+      document.getElementById('remTitle').innerText = headerLabel + ' QR Card (' + fileName + ')';
+      document.getElementById('remFormatBadge').innerText = 'QR PNG CARD';
+      document.getElementById('remPreviewBox').innerHTML =
+        '<div style="text-align:center;">' +
+          '<img src="' + dataUrl + '" alt="QR Card" style="max-width:240px;width:100%;border-radius:12px;border:1px solid #E7E5E4;margin:0 auto 10px;display:block;">' +
+          '<a href="' + dataUrl + '" download="' + fileName + '" style="display:inline-block;background:#F97316;color:#fff;font-weight:800;font-size:12px;padding:9px 16px;border-radius:10px;text-decoration:none;">⬇️ Save QR PNG Image</a>' +
+          '<p style="font-size:10px;color:#71717A;margin-top:6px;">(Mobile par image ko long-press karke bhi Save Image kar sakte hain)</p>' +
+        '</div>';
+      document.getElementById('btnCopyRepText').innerText = '📋 Copy Table QR Link';
+      document.getElementById('reportExportModal').classList.remove('hidden');
+    }
+
+    function switchCustTab(tab) {
+      ['custSecMenu', 'custSecWait', 'custSecCall', 'custSecPay'].forEach(function(id) { document.getElementById(id).classList.add('hidden'); });
+      ['tabMenu', 'tabWait', 'tabCall', 'tabPay'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+      if (tab === 'menu') { document.getElementById('custSecMenu').classList.remove('hidden'); document.getElementById('tabMenu').classList.add('active'); }
+      else if (tab === 'wait') { document.getElementById('custSecWait').classList.remove('hidden'); document.getElementById('tabWait').classList.add('active'); syncTableUI(); }
+      else if (tab === 'call') { document.getElementById('custSecCall').classList.remove('hidden'); document.getElementById('tabCall').classList.add('active'); }
+      else { document.getElementById('custSecPay').classList.remove('hidden'); document.getElementById('tabPay').classList.add('active'); renderBill(); }
+    }
+
+    function changeTable(tbl) { if (!isQrLocked) { currentTable = tbl; syncTableUI(); } }
+
+    function syncTableUI() {
+      const s = getMyGuestSession(currentTable);
+      const bTxt = getSpotShortBadge(currentTable);
+      document.getElementById('custTableBadge').innerText = bTxt;
+      document.getElementById('callTableLabel').innerText = bTxt;
+      document.getElementById('billTableHeader').innerText = bTxt + ' • YOUR PERSONAL BILL';
+      document.getElementById('waitOrderHeader').innerText = bTxt + ' • YOUR ORDER STATUS';
+      const nb = document.getElementById('custActiveNameBanner');
+      if (s && s.customerName) { nb.innerText = '👤 Guest: ' + s.customerName; nb.classList.remove('hidden'); } else nb.classList.add('hidden');
+
+      const stEl = document.getElementById('custTableLiveState');
+      const tEl = document.getElementById('waitStatusTitle');
+      const subEl = document.getElementById('waitStatusSub');
+      const tmEl = document.getElementById('cookingTimerDisplay');
+      const tmSub = document.getElementById('timerSubLabel');
+      ['stepOrdered', 'stepCooking', 'stepDining'].forEach(function(id) { document.getElementById(id).className = ''; });
+
+      if (!s || s.status === 'EMPTY') {
+        stEl.innerText = "● READY TO ORDER"; stEl.style.color = "#059669"; tEl.innerText = "No Active Order Yet";
+        subEl.innerText = "Select dishes from Menu & enter name."; tmEl.innerText = "--:--"; tmSub.innerText = "IDLE";
+      } else if (s.status === 'ORDERING') {
+        stEl.innerText = "● ORDER SENT"; stEl.style.color = "#D97706"; tEl.innerHTML = 'Order Sent to <span style="color:#F97316;">Staff</span>';
+        subEl.innerText = 'Hi ' + s.customerName + ', order received.'; tmSub.innerText = "ESTIMATED"; document.getElementById('stepOrdered').className = "step-done";
+      } else if (s.status === 'COOKING') {
+        stEl.innerText = "🔥 FOOD COOKING"; stEl.style.color = "#EA580C"; tEl.innerHTML = 'Your food is <span style="color:#F97316;">cooking</span>';
+        subEl.innerText = 'Preparing for ' + s.customerName + '.'; tmSub.innerText = "MIN LEFT";
+        document.getElementById('stepOrdered').className = "step-done"; document.getElementById('stepCooking').className = "step-active";
+      } else if (s.status === 'DINING') {
+        const ic = currentTable === 'COUNTER';
+        stEl.innerText = ic ? "🛍️ READY AT COUNTER" : "🍽️ DINING NOW"; stEl.style.color = "#0284C7";
+        tEl.innerHTML = ic ? 'Ready for <span style="color:#059669;">Pickup!</span>' : 'Enjoy Your <span style="color:#059669;">Meal!</span>';
+        subEl.innerText = 'Served to ' + s.customerName + '.'; tmEl.innerText = ic ? "READY" : "SERVED"; tmSub.innerText = "BON APPÉTIT";
+        document.getElementById('stepOrdered').className = "step-done"; document.getElementById('stepCooking').className = "step-done"; document.getElementById('stepDining').className = "step-dining";
+      } else if (s.status === 'PAID') {
+        stEl.innerText = "✅ BILL PAID"; stEl.style.color = "#059669"; tEl.innerHTML = 'Thank You, <span style="color:#F97316;">' + s.customerName + '!</span>';
+        subEl.innerText = 'Bill #' + (s.paidBillNo || '') + ' settled.'; tmEl.innerText = "PAID ✓"; tmSub.innerText = "SETTLED";
+      }
+      updateCartBar(); renderBill();
+    }
+
+    function setCategory(c) {
+      currentCategory = c;
+      document.querySelectorAll('.cat-pill').forEach(function(b) { b.classList.toggle('active', b.innerText === c); });
+      renderMenu();
+    }
+
+    function renderMenu() {
+      const q = document.getElementById('menuSearch').value.toLowerCase();
+      const list = menuItems.filter(function(i) { return (currentCategory === 'All' || i.cat === currentCategory) && (i.name.toLowerCase().indexOf(q) !== -1 || i.desc.toLowerCase().indexOf(q) !== -1); });
+      document.getElementById('menuList').innerHTML = list.map(function(i) {
+        return '<div onclick="openDishModal(' + i.id + ')" class="dish-card"><div class="dish-left"><div class="dish-icon">' + i.emoji + '</div><div><div class="dish-name">' + i.name + '</div><div class="dish-desc">' + i.desc + '</div><div class="dish-price">₹' + i.price + '</div></div></div><button class="add-circle">+</button></div>';
+      }).join('');
+    }
+
+    function openDishModal(id) {
+      selectedDish = menuItems.find(function(d) { return d.id === id; });
+      modalSpice = "Medium"; modalSize = "Full";
+      document.getElementById('modalDealCheck').checked = false;
+      document.getElementById('modalDishEmoji').innerText = selectedDish.emoji;
+      document.getElementById('modalDishName').innerText = selectedDish.name;
+      document.getElementById('modalDishDesc').innerText = selectedDish.desc;
+      document.getElementById('modalDishAllergens').innerText = selectedDish.allergens || "None";
+      document.getElementById('modalTableLabel').innerText = getSpotDisplayName(currentTable);
+      selectModalSize('Full');
+      document.getElementById('dishModal').classList.remove('hidden');
+    }
+    function closeDishModal() { document.getElementById('dishModal').classList.add('hidden'); }
+    function selectModalSpice(sp) {
+      modalSpice = sp;
+      document.querySelectorAll('.modal-spice-btn').forEach(function(b) {
+        const hit = b.innerText.indexOf(sp) !== -1;
+        b.style.borderColor = hit ? '#F97316' : '#E7E5E4';
+        b.style.background = hit ? '#FFF7ED' : '#fff';
+        b.style.color = hit ? '#EA580C' : '#18181B';
+      });
+    }
+    function selectModalSize(sz) {
+      modalSize = sz;
+      const h = document.getElementById('btnSizeHalf'), f = document.getElementById('btnSizeFull');
+      h.style.background = sz === 'Half' ? '#18181B' : '#fff'; h.style.color = sz === 'Half' ? '#fff' : '#18181B';
+      f.style.background = sz === 'Full' ? '#18181B' : '#fff'; f.style.color = sz === 'Full' ? '#fff' : '#18181B';
+      updateModalPrice();
+    }
+    function updateModalPrice() {
+      let base = modalSize === 'Half' ? Math.round(selectedDish.price * 0.6) : selectedDish.price;
+      if (document.getElementById('modalDealCheck').checked) base += 99;
+      document.getElementById('modalFinalPrice').innerText = '₹' + base;
+      return base;
+    }
+    function confirmAddToCart() {
+      const price = updateModalPrice(), deal = document.getElementById('modalDealCheck').checked;
+      tables[currentTable].cart.push({ name: selectedDish.name + ' (' + modalSize + ', ' + modalSpice + ')' + (deal ? ' + Lassi' : ''), cat: selectedDish.cat, price: price });
+      closeDishModal(); updateCartBar();
+    }
+    function updateCartBar() {
+      const c = tables[currentTable].cart, bar = document.getElementById('floatingCartBar');
+      if (c.length === 0) return bar.classList.add('hidden');
+      bar.classList.remove('hidden');
+      document.getElementById('cartTableTag').innerText = getSpotShortBadge(currentTable);
+      document.getElementById('cartCount').innerText = c.length;
+      document.getElementById('cartTotal').innerText = '₹' + c.reduce(function(a, i) { return a + i.price; }, 0);
+    }
+
+    function initiatePlaceOrder() {
+      if (tables[currentTable].cart.length === 0) return;
+      const myS = getMyGuestSession(currentTable);
+      document.getElementById('cnmTableTag').innerText = getSpotShortBadge(currentTable);
+      document.getElementById('customerNameInput').value = (myS && !myS.paid) ? myS.customerName : '';
+      document.getElementById('cnmError').classList.add('hidden');
+      document.getElementById('custNameModal').classList.remove('hidden');
+      setTimeout(function() { document.getElementById('customerNameInput').focus(); }, 100);
+    }
+    function closeCustNameModal() { document.getElementById('custNameModal').classList.add('hidden'); }
+    function confirmCustomerNameAndPlaceOrder() {
+      const n = document.getElementById('customerNameInput').value.trim();
+      if (!n) return document.getElementById('cnmError').classList.remove('hidden');
+      closeCustNameModal(); finalizePlaceOrder(n);
+    }
+
+    function finalizePlaceOrder(custName) {
+      const tObj = tables[currentTable], items = tObj.cart.slice();
+      const total = items.reduce(function(a, i) { return a + i.price; }, 0);
+      const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      let session = getMyGuestSession(currentTable);
+      if (!session || session.paid || session.customerName.toLowerCase() !== custName.toLowerCase()) {
+        if (session && !session.paid && session.customerName.toLowerCase() !== custName.toLowerCase()) {
+          myDeviceGuestId = 'G-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+          safeSet('pscGuestIdFinal', myDeviceGuestId);
+        }
+        session = { sessionId: myDeviceGuestId, customerName: custName, status: 'ORDERING', orders: [], tipPercent: 10, paid: false, paidBillNo: null, payMethod: '', prepEndTime: Date.now() + 900000 };
+        tObj.guests.push(session);
+      }
+      session.orders = session.orders.concat(items); session.status = 'ORDERING'; session.paid = false; session.prepEndTime = Date.now() + 900000;
+      tObj.cart = [];
+      pendingStaffOrders.push({ id: Date.now(), table: currentTable, sessionId: session.sessionId, customerName: custName, items: items, total: total, time: nowTime });
+      syncTableUI(); switchCustTab('wait'); renderFloorMap(); renderStaffIncoming(); updateStaffOrderBadges();
+      triggerLiveNotification('NEW ORDER • ' + getSpotShortBadge(currentTable), custName + ' ordered ' + items.length + ' item(s) (₹' + total + ')');
+    }
+
+    function renderStaffIncoming() {
+      const box = document.getElementById('staffIncomingOrders'); updateStaffOrderBadges();
+      if (pendingStaffOrders.length === 0) { box.innerHTML = '<p style="font-size:12px;color:#71717A;text-align:center;padding:24px 0;">No pending orders (0).</p>'; return; }
+      box.innerHTML = pendingStaffOrders.map(function(ord, idx) {
+        return '<div style="background:#121215;border:1px solid rgba(249,115,22,0.55);border-radius:16px;padding:12px;margin-bottom:10px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;"><span style="background:' + (ord.table === 'COUNTER' ? '#7E22CE' : '#F97316') + ';color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:6px;">#' + (idx + 1) + ' • ' + getSpotShortBadge(ord.table) + ' • ' + ord.customerName.toUpperCase() + '</span><span style="font-size:11px;color:#A1A1AA;">' + ord.time + '</span></div>' +
+          '<p style="font-weight:700;font-size:13px;margin:6px 0;">' + ord.items.map(function(i) { return i.name; }).join(', ') + '</p>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span style="font-size:12px;color:#A1A1AA;">₹' + ord.total + '</span><button onclick="sendOrderToKitchen(' + idx + ')" style="background:#F97316;color:#fff;font-weight:700;font-size:11px;padding:7px 12px;border-radius:10px;">Send to Kitchen →</button></div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function sendOrderToKitchen(idx) {
+      const ord = pendingStaffOrders[idx]; pendingStaffOrders.splice(idx, 1);
+      const g = tables[ord.table].guests.find(function(x) { return x.sessionId === ord.sessionId; });
+      if (g) { g.status = 'COOKING'; g.prepEndTime = Date.now() + 720000; }
+      const now = Date.now();
+      ord.items.forEach(function(item) { kdsItems.push({ id: now + Math.random(), table: ord.table, sessionId: ord.sessionId, customerName: ord.customerName, name: item.name, cat: item.cat, startedAt: now }); });
+      renderStaffIncoming(); renderKDS(); renderFloorMap(); updateStaffOrderBadges();
+      if (currentTable === ord.table) syncTableUI();
+    }
+
+    function renderKDS() {
+      const s1 = document.getElementById('kdsStation1'), s2 = document.getElementById('kdsStation2'), s3 = document.getElementById('kdsStation3');
+      s1.innerHTML = ''; s2.innerHTML = ''; s3.innerHTML = '';
+      kdsItems.forEach(function(k) {
+        const html = '<div style="background:#09090B;padding:10px;border-radius:12px;border:1px solid rgba(249,115,22,0.4);display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;">' +
+          '<div><strong style="color:#FB923C;">' + (k.table === 'COUNTER' ? '🛍️ COUNTER' : k.table) + '</strong> <span style="color:#38BDF8;font-size:11px;">(' + k.customerName + ')</span><br>' + k.name + '<br><span class="kds-live-timer" data-start="' + k.startedAt + '" style="font-size:10px;color:#34D399;font-family:monospace;">00:00</span></div>' +
+          '<button onclick="serveDishToTable(' + k.id + ', \'' + k.table + '\', \'' + k.sessionId + '\')" style="background:#059669;color:#fff;font-size:10px;font-weight:800;padding:5px 10px;border-radius:8px;">Serve ✓</button></div>';
+        if (k.cat === 'Starters' || k.cat === 'Breads') s1.insertAdjacentHTML('beforeend', html);
+        else if (k.cat === 'Drinks') s3.insertAdjacentHTML('beforeend', html);
+        else s2.insertAdjacentHTML('beforeend', html);
+      });
+      if (!s1.innerHTML) s1.innerHTML = '<p style="font-size:12px;color:#52525B;">Empty</p>';
+      if (!s2.innerHTML) s2.innerHTML = '<p style="font-size:12px;color:#52525B;">Empty</p>';
+      if (!s3.innerHTML) s3.innerHTML = '<p style="font-size:12px;color:#52525B;">Empty</p>';
+    }
+
+    function serveDishToTable(kId, tbl, sessionId) {
+      kdsItems = kdsItems.filter(function(k) { return k.id !== kId; });
+      const g = tables[tbl].guests.find(function(x) { return x.sessionId === sessionId; });
+      if (g) { g.status = 'DINING'; g.prepEndTime = null; }
+      renderKDS(); renderFloorMap(); if (currentTable === tbl) syncTableUI();
+    }
+
+    function getGuestBillTotal(g) {
+      if (!g) return { sub: 0, tip: 0, total: 0 };
+      const sub = g.orders.reduce(function(s, i) { return s + i.price; }, 0);
+      if (!sub) return { sub: 0, tip: 0, total: 0 };
+      const tip = Math.round(sub * g.tipPercent / 100);
+      return { sub: sub, tip: tip, total: sub + tip };
+    }
+
+    function getTableSummary(spot) {
+      let unpaidTotal = 0, paidTotal = 0, highest = 'EMPTY';
+      const prio = { EMPTY: 0, PAID: 1, DINING: 2, COOKING: 3, ORDERING: 4 };
+      tables[spot].guests.forEach(function(g) {
+        const b = getGuestBillTotal(g).total;
+        if (g.paid) paidTotal += b; else unpaidTotal += b;
+        if (prio[g.status] > prio[highest]) highest = g.status;
+      });
+      return { guests: tables[spot].guests, unpaidTotal: unpaidTotal, paidTotal: paidTotal, status: highest };
+    }
+
+    function renderFloorMap() {
+      let occupied = 0, unpaidSum = 0;
+      document.getElementById('floorMapGrid').innerHTML = ALL_SPOTS.map(function(spot) {
+        const tObj = tables[spot], sum = getTableSummary(spot), isCounter = spot === 'COUNTER';
+        if (sum.guests.length > 0) occupied++;
+        unpaidSum += sum.unpaidTotal;
+        let cls = 'tbl-tile' + (isCounter ? ' counter-tile' : '');
+        let badge = isCounter ? '<span style="font-size:10px;font-weight:800;color:#C084FC;">🛍️ PICKUP</span>' : '<span style="font-size:10px;font-weight:800;color:#34D399;">🟢 EMPTY</span>';
+        if (tObj.alertReason) { cls += ' st-alert'; badge = '<span style="font-size:10px;font-weight:800;color:#F87171;">🔔 ' + tObj.alertReason.toUpperCase() + '</span>'; }
+        else if (sum.status === 'ORDERING') { cls += ' st-ordering'; badge = '<span style="font-size:10px;font-weight:800;color:#FBBF24;">🟡 ORDERING</span>'; }
+        else if (sum.status === 'COOKING') { cls += ' st-cooking'; badge = '<span style="font-size:10px;font-weight:800;color:#FB923C;">🔥 COOKING</span>'; }
+        else if (sum.status === 'DINING') { cls += ' st-dining'; badge = '<span style="font-size:10px;font-weight:800;color:#38BDF8;">' + (isCounter ? '🛍️ READY' : '🍽️ DINING') + '</span>'; }
+        else if (sum.status === 'PAID') { cls += ' st-paid'; badge = '<span style="font-size:10px;font-weight:800;color:#34D399;">✅ PAID</span>'; }
+
+        const custTag = sum.guests.length === 1 ? '<p style="font-size:10px;color:#E4E4E7;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">👤 ' + sum.guests[0].customerName + '</p>' : (sum.guests.length > 1 ? '<p style="font-size:10px;color:#38BDF8;font-weight:800;margin-top:2px;">👥 ' + sum.guests.length + ' Guests</p>' : '');
+        const pill = sum.unpaidTotal > 0 ? '<div style="margin-top:5px;"><span style="background:rgba(245,158,11,0.2);color:#FCD34D;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">₹' + sum.unpaidTotal + ' UNPAID</span></div>' : (sum.paidTotal > 0 ? '<div style="margin-top:5px;"><span style="background:rgba(16,185,129,0.2);color:#6EE7B7;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">₹' + sum.paidTotal + ' PAID</span></div>' : '<div style="margin-top:5px;font-size:10px;color:#71717A;font-weight:700;">Available</div>');
+        return '<div onclick="openTableManageModal(\'' + spot + '\')" class="' + cls + '"><p style="font-size:14px;font-weight:800;">' + (isCounter ? '🛍️ COUNTER' : spot) + '</p><div style="margin-top:2px;">' + badge + '</div>' + custTag + pill + '</div>';
+      }).join('');
+      document.getElementById('kpiOccupiedCount').innerText = occupied + '/' + ALL_SPOTS.length;
+      document.getElementById('kpiUnpaidTotal').innerText = '₹' + unpaidSum.toLocaleString();
+      const todayStr = getLocalDateStr(0);
+      document.getElementById('kpiSalesTotal').innerText = '₹' + salesLedger.filter(function(s) { return s.date === todayStr; }).reduce(function(a, s) { return a + s.total; }, 0).toLocaleString();
+    }
+
+    function openTableManageModal(tbl, gIdx) {
+      selectedFloorTable = tbl; const tObj = tables[tbl]; tObj.alertReason = '';
+      if (typeof gIdx === 'number') selectedModalGuestIdx = gIdx; else if (selectedModalGuestIdx >= tObj.guests.length) selectedModalGuestIdx = 0;
+      document.getElementById('tmTitle').innerText = getSpotDisplayName(tbl);
+      const sBox = document.getElementById('tmGuestSelectorBox'), pBox = document.getElementById('tmGuestPills');
+      if (tObj.guests.length === 0) {
+        sBox.classList.add('hidden'); document.getElementById('tmStatusLabel').innerText = 'STATUS: EMPTY'; document.getElementById('tmCustomerLabel').innerText = 'No active customer';
+        document.getElementById('tmItemsList').innerHTML = '<p style="color:#71717A;text-align:center;padding:10px;">Empty</p>'; document.getElementById('tmTotalBill').innerText = '₹0';
+        const b = document.getElementById('tmPayBadge'); b.innerText = "NO BILL"; b.style.background = "#3F3F46"; b.style.color = "#D4D4D8";
+      } else {
+        sBox.classList.remove('hidden');
+        pBox.innerHTML = tObj.guests.map(function(g, idx) {
+          return '<button onclick="openTableManageModal(\'' + tbl + '\', ' + idx + ')" class="guest-chip' + (idx === selectedModalGuestIdx ? ' active' : '') + '">' + (g.paid ? '✅' : '⏳') + ' ' + g.customerName + ' (₹' + getGuestBillTotal(g).total + ')</button>';
+        }).join('');
+        const ag = tObj.guests[selectedModalGuestIdx], billObj = getGuestBillTotal(ag);
+        document.getElementById('tmStatusLabel').innerText = 'STATUS: ' + ag.status;
+        document.getElementById('tmCustomerLabel').innerText = '👤 Selected: ' + ag.customerName;
+        document.getElementById('tmBillLabel').innerText = ag.customerName.toUpperCase() + ' • BILL';
+        document.getElementById('tmTotalBill').innerText = '₹' + billObj.total;
+        document.getElementById('tmClearBtn').innerText = '🧹 Clear ' + ag.customerName;
+        const b = document.getElementById('tmPayBadge');
+        b.innerText = ag.paid ? ('PAID (#' + (ag.paidBillNo || '') + ')') : "UNPAID";
+        b.style.background = ag.paid ? "rgba(16,185,129,0.2)" : "rgba(245,158,11,0.2)";
+        b.style.color = ag.paid ? "#34D399" : "#FBBF24";
+        document.getElementById('tmItemsList').innerHTML = ag.orders.map(function(o) { return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>' + o.name + '</span><strong>₹' + o.price + '</strong></div>'; }).join('');
+      }
+      document.getElementById('tableManageModal').classList.remove('hidden'); renderFloorMap();
+    }
+    function closeTableModal() { document.getElementById('tableManageModal').classList.add('hidden'); }
+    function staffMarkDining() { const g = tables[selectedFloorTable].guests[selectedModalGuestIdx]; if (g) { g.status = 'DINING'; g.prepEndTime = null; openTableManageModal(selectedFloorTable, selectedModalGuestIdx); if (currentTable === selectedFloorTable) syncTableUI(); } }
+    function staffMarkPaid() {
+      const g = tables[selectedFloorTable].guests[selectedModalGuestIdx]; if (!g) return;
+      const b = getGuestBillTotal(g); if (!b.total) return alert("No bill!");
+      if (!g.paid) { const sn = recordSaleToLedger(selectedFloorTable, g.customerName, g.orders, b.sub, b.tip, b.total, 'Cash / Counter'); g.paid = true; g.paidBillNo = sn; g.payMethod = 'Cash / Counter'; g.status = 'PAID'; }
+      openTableManageModal(selectedFloorTable, selectedModalGuestIdx); if (currentTable === selectedFloorTable) syncTableUI();
+    }
+    function clearSelectedGuestOrTable() {
+      const tObj = tables[selectedFloorTable];
+      if (tObj.guests.length > 0) {
+        const rem = tObj.guests[selectedModalGuestIdx]; tObj.guests.splice(selectedModalGuestIdx, 1);
+        kdsItems = kdsItems.filter(function(k) { return k.sessionId !== rem.sessionId; });
+        pendingStaffOrders = pendingStaffOrders.filter(function(o) { return o.sessionId !== rem.sessionId; });
+        selectedModalGuestIdx = 0;
+      }
+      if (tObj.guests.length === 0) closeTableModal(); else openTableManageModal(selectedFloorTable, 0);
+      renderFloorMap(); renderStaffIncoming(); renderKDS(); updateStaffOrderBadges(); if (currentTable === selectedFloorTable) syncTableUI();
+    }
+
+    function getNextSequentialBillNo() {
+      return salesLedger.reduce(function(m, x) { const n = parseInt(x.billNo, 10) || 0; return n > m ? n : m; }, 0) + 1;
+    }
+    function recordSaleToLedger(tbl, custName, ordersArr, sub, tip, total, mode) {
+      const sn = getNextSequentialBillNo();
+      salesLedger.push({ billNo: sn, date: getLocalDateStr(0), time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), table: tbl, customer: custName || 'Guest', items: ordersArr.map(function(o) { return o.name; }), subtotal: sub, tip: tip, total: total, mode: mode });
+      safeSet('pscLedgerFinal', salesLedger); renderReports(); return sn;
+    }
+
+    function renderBill() {
+      const myS = getMyGuestSession(currentTable), billObj = getGuestBillTotal(myS);
+      const bCard = document.getElementById('billCard'), rCard = document.getElementById('receiptReviewCard');
+      if (myS && myS.paid && billObj.total > 0) {
+        bCard.classList.add('hidden'); rCard.classList.remove('hidden');
+        document.getElementById('receiptBillSerial').innerText = 'BILL ID: #' + (myS.paidBillNo || '');
+        document.getElementById('receiptMeta').innerText = getSpotShortBadge(currentTable) + ' • ' + myS.customerName.toUpperCase() + ' • ' + myS.payMethod.toUpperCase();
+        document.getElementById('receiptPaidAmount').innerText = '₹' + billObj.total; return;
+      }
+      bCard.classList.remove('hidden'); rCard.classList.add('hidden');
+      document.getElementById('billCustNameLabel').innerText = myS ? ('👤 Customer: ' + myS.customerName) : '';
+      const list = document.getElementById('billItemsList');
+      if (!myS || myS.orders.length === 0) { list.innerHTML = '<p style="font-size:12px;color:#A1A1AA;text-align:center;padding:12px 0;">Aapka koi active bill nahi hai.</p>'; document.getElementById('billFinalTotal').innerText = "₹0"; return; }
+      list.innerHTML = myS.orders.map(function(i) { return '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>' + i.name + '</span><strong>₹' + i.price + '</strong></div>'; }).join('');
+      document.getElementById('billFinalTotal').innerText = '₹' + billObj.total;
+      const half = Math.ceil(billObj.total / 2);
+      document.getElementById('splitAmt1').innerText = '₹' + half; document.getElementById('splitAmt2').innerText = '₹' + (billObj.total - half);
+    }
+
+    function toggleSplitBill() { document.getElementById('splitBoxes').classList.toggle('hidden'); }
+    function setTip(pct) { const s = getMyGuestSession(currentTable); if (s) s.tipPercent = pct; document.querySelectorAll('.tip-btn').forEach(function(b) { const h = b.innerText === pct + '%'; b.style.background = h ? '#18181B' : '#F5F5F4'; b.style.color = h ? '#fff' : '#3F3F46'; }); renderBill(); }
+    function completePayment(m) {
+      const s = getMyGuestSession(currentTable), b = getGuestBillTotal(s);
+      if (!s || !b.total) return alert("Pehle order karein!");
+      const sn = recordSaleToLedger(currentTable, s.customerName, s.orders, b.sub, b.tip, b.total, m);
+      s.paid = true; s.paidBillNo = sn; s.payMethod = m; s.status = 'PAID';
+      syncTableUI(); renderFloorMap();
+    }
+    function triggerWaiterCall(r) {
+      const s = getMyGuestSession(currentTable); tables[currentTable].alertReason = r;
+      document.getElementById('waiterCallFeedback').classList.remove('hidden');
+      setTimeout(function() { document.getElementById('waiterCallFeedback').classList.add('hidden'); }, 3500);
+      renderFloorMap(); triggerLiveNotification('ALERT • ' + getSpotShortBadge(currentTable), (s ? s.customerName : 'Guest') + ': ' + r);
+    }
+    function toggleWaitCard(c) { ['cardWifi', 'cardRewards', 'cardGame'].forEach(function(id) { document.getElementById(id).classList.add('hidden'); }); if (c === 'wifi') document.getElementById('cardWifi').classList.remove('hidden'); if (c === 'rewards') document.getElementById('cardRewards').classList.remove('hidden'); if (c === 'game') { document.getElementById('cardGame').classList.remove('hidden'); renderQuizQuestion(); } }
+    function copyWifi() { if (navigator.clipboard) navigator.clipboard.writeText(appConfig.wifiPass); const b = document.getElementById('copyWifiBtn'); b.innerText = "Copied ✓"; setTimeout(function() { b.innerText = "Copy Password"; }, 2000); }
+
+    function renderQuizQuestion() {
+      const q = quizQuestions[quizIndex % quizQuestions.length];
+      document.getElementById('quizQNum').innerText = (quizIndex % quizQuestions.length) + 1;
+      document.getElementById('quizQuestionText').innerText = q.q;
+      document.getElementById('quizScore').innerText = quizScore;
+      document.getElementById('rewardPointsVal').innerText = Math.max(0, 150 + quizScore);
+      document.getElementById('quizOptionsBox').innerHTML = q.opts.map(function(o, idx) { return '<button onclick="submitQuizAnswer(' + idx + ')" class="quiz-opt">' + o + '</button>'; }).join('');
+    }
+    function submitQuizAnswer(idx) {
+      const q = quizQuestions[quizIndex % quizQuestions.length], fb = document.getElementById('quizFeedbackMsg');
+      fb.classList.remove('hidden');
+      if (idx === q.ans) { quizScore += 50; fb.innerText = "✅ Sahi Jawab! +50 Pts"; fb.style.background = "rgba(16,185,129,0.2)"; fb.style.color = "#34D399"; }
+      else { quizScore -= 20; fb.innerText = "❌ Galat Jawab! -20 Pts"; fb.style.background = "rgba(239,68,68,0.2)"; fb.style.color = "#F87171"; }
+      document.getElementById('quizScore').innerText = quizScore; document.getElementById('rewardPointsVal').innerText = Math.max(0, 150 + quizScore);
+      setTimeout(function() { fb.classList.add('hidden'); quizIndex++; renderQuizQuestion(); }, 900);
+    }
+
+    function setReportPeriod(p) {
+      currentReportPeriod = p;
+      document.querySelectorAll('.rep-pill').forEach(function(b) { b.classList.remove('active'); });
+      if (p === 'daily') document.getElementById('repBtnDaily').classList.add('active');
+      if (p === '3months') document.getElementById('repBtn3Months').classList.add('active');
+      if (p === 'yearly') document.getElementById('repBtnYearly').classList.add('active');
+      if (p === 'custom') document.getElementById('repBtnCustom').classList.add('active');
+      document.getElementById('customDateRow').classList.toggle('hidden', p !== 'custom');
+      renderReports();
+    }
+    function getFilteredSales() {
+      const today = getLocalDateStr(0);
+      return salesLedger.filter(function(e) {
+        if (currentReportPeriod === 'daily') return e.date === today;
+        if (currentReportPeriod === '3months') return e.date >= getLocalDateStr(90);
+        if (currentReportPeriod === 'yearly') return e.date >= getLocalDateStr(365);
+        if (currentReportPeriod === 'custom') {
+          const s = document.getElementById('repStartDate').value, end = document.getElementById('repEndDate').value;
+          if (s && e.date < s) return false; if (end && e.date > end) return false;
+        }
+        return true;
+      }).slice().sort(function(a, b) { return (parseInt(a.billNo, 10) || 0) - (parseInt(b.billNo, 10) || 0); });
+    }
+    function renderReports() {
+      const rows = getFilteredSales();
+      const rev = rows.reduce(function(s, r) { return s + r.total; }, 0);
+      const tips = rows.reduce(function(s, r) { return s + r.tip; }, 0);
+      let upi = 0, card = 0, cash = 0; const counts = {};
+      rows.forEach(function(r) {
+        if (r.mode.indexOf('UPI') !== -1) upi += r.total; else if (r.mode.indexOf('Card') !== -1) card += r.total; else cash += r.total;
+        r.items.forEach(function(it) { const c = it.split(' (')[0].split(' x')[0]; counts[c] = (counts[c] || 0) + 1; });
+      });
+      document.getElementById('repTotalRev').innerText = '₹' + rev.toLocaleString();
+      document.getElementById('repTotalOrders').innerText = rows.length;
+      document.getElementById('repTotalTips').innerText = '₹' + tips.toLocaleString();
+      document.getElementById('repTopDish').innerText = Object.keys(counts).sort(function(a, b) { return counts[b] - counts[a]; })[0] || "—";
+      document.getElementById('repPayUpi').innerText = '₹' + upi.toLocaleString(); document.getElementById('repPayCard').innerText = '₹' + card.toLocaleString(); document.getElementById('repPayCash').innerText = '₹' + cash.toLocaleString();
+      const tb = document.getElementById('reportTableBody');
+      if (rows.length === 0) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#A1A1AA;">No bills in range.</td></tr>'; return; }
+      tb.innerHTML = rows.map(function(r) {
+        return '<tr><td style="font-weight:800;color:#EA580C;">#' + r.billNo + '</td><td><strong>' + r.date + '</strong><br><span style="font-size:10px;color:#71717A;">' + r.time + '</span></td><td><strong>' + (r.table === 'COUNTER' ? 'Counter' : r.table) + '</strong></td><td><strong>' + (r.customer || 'Guest') + '</strong></td><td>' + r.items.join(', ') + '</td><td>' + r.mode + '</td><td style="text-align:right;color:#059669;font-weight:700;">₹' + r.tip + '</td><td style="text-align:right;font-weight:800;">₹' + r.total + '</td></tr>';
+      }).join('');
+    }
+    function getPeriodLabel() { return currentReportPeriod === 'daily' ? "Daily_Report_Today" : (currentReportPeriod === '3months' ? "Last_3_Months_Report" : (currentReportPeriod === 'yearly' ? "Annual_Yearly_Report" : "Custom_Sales_Report")); }
+    function buildPlainSummaryText(rows) {
+      return rows.map(function(r) { return '#' + r.billNo + ' | ' + r.date + ' ' + r.time + ' | ' + (r.table === 'COUNTER' ? 'Counter' : r.table) + ' | ' + (r.customer || 'Guest') + ' | ' + r.items.join('; ') + ' | ' + r.mode + ' | Tip Rs.' + r.tip + ' | Total Rs.' + r.total; }).join('\n');
+    }
+    function triggerSmartDownload(content, mime, fileName, title, badge, preview, isBinary) {
+      let dataHref = '';
+      try {
+        if (isBinary) {
+          let bin = '';
+          for (let i = 0; i < content.length; i++) bin += String.fromCharCode(content.charCodeAt(i) & 0xff);
+          dataHref = 'data:' + mime + ';base64,' + btoa(bin);
+        } else {
+          dataHref = 'data:' + mime + ';charset=utf-8,' + encodeURIComponent(content);
+        }
+        const a = document.createElement('a');
+        a.href = dataHref;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (e) {
+        try {
+          const blob = new Blob([content], { type: mime });
+          dataHref = URL.createObjectURL(blob);
+          const a2 = document.createElement('a');
+          a2.href = dataHref;
+          a2.download = fileName;
+          document.body.appendChild(a2);
+          a2.click();
+          setTimeout(function() { document.body.removeChild(a2); URL.revokeObjectURL(dataHref); }, 1500);
+        } catch (e2) {}
+      }
+      const directBtn = dataHref ? ('<div style="margin-bottom:10px;text-align:center;"><a href="' + dataHref + '" download="' + fileName + '" style="display:inline-block;background:#059669;color:#fff;font-weight:800;font-size:12px;padding:9px 16px;border-radius:10px;text-decoration:none;">⬇️ Save ' + fileName + '</a></div>') : '';
+      document.getElementById('remTitle').innerText = title;
+      document.getElementById('remFormatBadge').innerText = badge;
+      document.getElementById('remPreviewBox').innerHTML = directBtn + preview;
+      document.getElementById('btnCopyRepText').innerText = '📋 Copy Report Data';
+      document.getElementById('reportExportModal').classList.remove('hidden');
+    }
+    function closeReportExportModal() { document.getElementById('reportExportModal').classList.add('hidden'); }
+    function copyExportReportText() { if (navigator.clipboard) navigator.clipboard.writeText(currentExportCopyText); document.getElementById('btnCopyRepText').innerText = '✅ Copied!'; }
+    function triggerDirectPrintView() { closeReportExportModal(); setTimeout(function() { window.print(); }, 200); }
+
+    function downloadReportExcelFile() {
+      const rows = getFilteredSales(); if (!rows.length) return alert("No records!");
+      currentExportCopyText = buildPlainSummaryText(rows);
+      const sub = rows.reduce(function(s, r) { return s + r.subtotal; }, 0), tip = rows.reduce(function(s, r) { return s + r.tip; }, 0), grand = rows.reduce(function(s, r) { return s + r.total; }, 0);
+      let html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1"><tr><th colspan="9">' + appConfig.name + ' REPORT</th></tr><tr><th>Bill ID</th><th>Date</th><th>Time</th><th>Spot</th><th>Customer</th><th>Items</th><th>Mode</th><th>Tip</th><th>Total</th></tr>';
+      rows.forEach(function(r) { html += '<tr><td>' + r.billNo + '</td><td>' + r.date + '</td><td>' + r.time + '</td><td>' + (r.table === 'COUNTER' ? 'Counter' : r.table) + '</td><td>' + (r.customer || 'Guest') + '</td><td>' + r.items.join(', ') + '</td><td>' + r.mode + '</td><td>' + r.tip + '</td><td>' + r.total + '</td></tr>'; });
+      html += '<tr><td colspan="7"><strong>GRAND TOTAL</strong></td><td><strong>' + tip + '</strong></td><td><strong>' + grand + '</strong></td></tr></table></body></html>';
+      const fn = appConfig.name.replace(/\s+/g, '_') + '_' + getPeriodLabel() + '.xls';
+      triggerSmartDownload('\ufeff' + html, 'application/vnd.ms-excel;charset=utf-8', fn, fn, 'EXCEL (.XLS)', html);
+    }
+
+    function downloadReportPDFFile() {
+      const rows = getFilteredSales(); if (!rows.length) return alert("No records!");
+      currentExportCopyText = buildPlainSummaryText(rows);
+      function esc(s) { return String(s).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/[^\x20-\x7E]/g, ' '); }
+      const cmds = ['BT', '/F1 14 Tf', '40 790 Td', '(' + esc(appConfig.name.toUpperCase() + ' - SALES REPORT') + ') Tj', '/F1 9 Tf', '0 -18 Td', '(' + esc('Period: ' + getPeriodLabel()) + ') Tj'];
+      rows.forEach(function(r) { cmds.push('0 -14 Td', '(' + esc('#' + r.billNo + ' | ' + r.date + ' ' + r.time + ' | ' + r.table + ' | ' + r.customer + ' | Rs.' + r.total) + ') Tj'); });
+      cmds.push('ET');
+      const st = cmds.join('\n');
+      const objs = [
+        '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+        '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+        '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n',
+        '4 0 obj\n<< /Length ' + st.length + ' >>\nstream\n' + st + '\nendstream\nendobj\n',
+        '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n'
+      ];
+      let pdf = '%PDF-1.4\n'; const off = [0];
+      for (let i = 0; i < objs.length; i++) { off.push(pdf.length); pdf += objs[i]; }
+      const xr = pdf.length; pdf += 'xref\n0 6\n0000000000 65535 f \n';
+      for (let j = 1; j < off.length; j++) pdf += String(off[j]).padStart(10, '0') + ' 00000 n \n';
+      pdf += 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF';
+      const fn = appConfig.name.replace(/\s+/g, '_') + '_' + getPeriodLabel() + '.pdf';
+      triggerSmartDownload(pdf, 'application/pdf', fn, fn, 'PDF (.PDF)', '<pre style="white-space:pre-wrap;font-family:monospace;">' + currentExportCopyText + '</pre>', true);
+    }
+
+    function downloadReportWordFile() {
+      const rows = getFilteredSales(); if (!rows.length) return alert("No records!");
+      currentExportCopyText = buildPlainSummaryText(rows);
+      const sub = rows.reduce(function(s, r) { return s + r.subtotal; }, 0);
+      const tip = rows.reduce(function(s, r) { return s + r.tip; }, 0);
+      const grand = rows.reduce(function(s, r) { return s + r.total; }, 0);
+
+      let wordHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head><meta charset="utf-8"><title>' + appConfig.name + ' Sales Report</title>' +
+        '<style>body{font-family:Calibri,Arial,sans-serif;padding:20px;color:#18181B;}h1{color:#EA580C;margin-bottom:4px;}p{color:#52525B;font-size:12px;}.box{background:#F5F5F4;padding:10px;border:1px solid #D6D3D1;margin:12px 0;font-weight:bold;font-size:12px;}table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;}th,td{border:1px solid #A1A1AA;padding:7px;text-align:left;}th{background:#18181B;color:#FFFFFF;}</style>' +
+        '</head><body>' +
+        '<h1>' + appConfig.name.toUpperCase() + ' — SALES REPORT</h1>' +
+        '<p>Period: <strong>' + getPeriodLabel().replace(/_/g, ' ') + '</strong> | Generated: ' + new Date().toLocaleString() + '</p>' +
+        '<div class="box">Total Bills: ' + rows.length + ' &nbsp;|&nbsp; Subtotal: Rs. ' + sub + ' &nbsp;|&nbsp; Tips: Rs. ' + tip + ' &nbsp;|&nbsp; Grand Total: Rs. ' + grand + '</div>' +
+        '<table><thead><tr><th>Bill ID</th><th>Date</th><th>Time</th><th>Table / Counter</th><th>Customer</th><th>Items Ordered</th><th>Payment</th><th>Tip (Rs.)</th><th>Total (Rs.)</th></tr></thead><tbody>';
+
+      rows.forEach(function(r) {
+        wordHtml += '<tr><td><strong>#' + r.billNo + '</strong></td><td>' + r.date + '</td><td>' + r.time + '</td><td>' + (r.table === 'COUNTER' ? 'Counter Pickup' : r.table) + '</td><td>' + (r.customer || 'Guest') + '</td><td>' + r.items.join(', ') + '</td><td>' + r.mode + '</td><td>' + r.tip + '</td><td><strong>' + r.total + '</strong></td></tr>';
+      });
+      wordHtml += '<tr style="background:#FEF3C7;font-weight:bold;"><td colspan="7">GRAND TOTAL (' + rows.length + ' Bills)</td><td>Rs. ' + tip + '</td><td>Rs. ' + grand + '</td></tr></tbody></table></body></html>';
+
+      const fn = appConfig.name.replace(/\s+/g, '_') + '_' + getPeriodLabel() + '.doc';
+      triggerSmartDownload('\ufeff' + wordHtml, 'application/msword;charset=utf-8', fn, fn, 'WORD (.DOC)', wordHtml, false);
+    }
+
+    function saveRestaurantSettings() {
+      appConfig.name = document.getElementById('adminRestName').value || "Park Side Cafe";
+      appConfig.city = document.getElementById('adminRestCity').value || "KOLKATA";
+      appConfig.wifiSsid = document.getElementById('adminWifiSsid').value || "ParkSideCafe_Guest";
+      appConfig.wifiPass = document.getElementById('adminWifiPass').value || "parkside2026";
+      const sp = document.getElementById('adminStaffPinCode').value.trim(), op = document.getElementById('adminOwnerPinCode').value.trim();
+      if (!/^\d{4}$/.test(sp) || !/^\d{4}$/.test(op)) return alert("PIN must be 4 digits!");
+      appConfig.staffPin = sp; appConfig.ownerPin = op;
+      safeSet('pscConfigFinal', appConfig); applyBranding(); renderTableQRCodes(); alert("Saved!");
+    }
+    function addNewMenuItem() {
+      const name = document.getElementById('newDishName').value.trim(), price = parseInt(document.getElementById('newDishPrice').value, 10);
+      if (!name || !price) return alert("Enter name & price!");
+      menuItems.push({ id: Date.now(), name: name, cat: document.getElementById('newDishCat').value, price: price, emoji: document.getElementById('newDishEmoji').value || "🍽️", desc: document.getElementById('newDishDesc').value || "Special", allergens: document.getElementById('newDishAllergens').value || "None" });
+      safeSet('pscMenuFinal', menuItems); document.getElementById('newDishName').value = ""; document.getElementById('newDishPrice').value = "";
+      renderMenu(); renderAdminMenu(); alert("Added!");
+    }
+    function deleteMenuItem(id) { menuItems = menuItems.filter(function(m) { return m.id !== id; }); safeSet('pscMenuFinal', menuItems); renderMenu(); renderAdminMenu(); }
+    function renderAdminMenu() {
+      document.getElementById('adminMenuList').innerHTML = menuItems.map(function(i) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;background:#FAFAF9;padding:10px 12px;border-radius:12px;border:1px solid #E7E5E4;margin-bottom:6px;font-size:12px;"><span><strong>' + i.emoji + ' ' + i.name + '</strong> (' + i.cat + ') — ₹' + i.price + '</span><button onclick="deleteMenuItem(' + i.id + ')" style="color:#EF4444;font-weight:700;">Delete</button></div>';
+      }).join('');
+    }
+
+    init();
+  </script>
+</body>
+</html>
