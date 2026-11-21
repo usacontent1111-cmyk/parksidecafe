@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Park Side Cafe — Welcome</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     :root {
       --bg: #0f1115;
@@ -19,8 +20,9 @@
       --border: rgba(255, 255, 255, 0.09);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 90px; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 95px; }
 
+    /* Welcome Overlay */
     .welcome-screen {
       position: fixed; inset: 0; z-index: 999;
       background: radial-gradient(circle at top, #272217 0%, #0f1115 70%);
@@ -94,6 +96,21 @@
     .btn.ok { background: var(--ok); color: #062118; border: 0; }
     .btn.warn { background: var(--warn); color: #fff; border: 0; }
 
+    /* Extra / Add-ons Box */
+    .extra-row {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      background: var(--card-2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .extra-check {
+      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      flex: 1;
+    }
+    .extra-check input[type="checkbox"] {
+      width: auto; margin: 0; accent-color: var(--accent); transform: scale(1.15);
+    }
+
+    /* Table Status Board */
     .table-board {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;
       margin-bottom: 16px;
@@ -113,13 +130,13 @@
       padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
     }
     .modal-bg {
-      position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.72);
+      position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.78);
       display: none; align-items: center; justify-content: center; padding: 16px;
     }
     .modal-bg.open { display: flex; }
     .modal {
-      width: 100%; max-width: 460px; background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; padding: 18px; max-height: 88vh; overflow-y: auto;
+      width: 100%; max-width: 470px; background: var(--card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 18px; max-height: 90vh; overflow-y: auto;
     }
     input, select {
       width: 100%; background: var(--card-2); color: var(--text); border: 1px solid var(--border);
@@ -137,6 +154,22 @@
       display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
       background: rgba(245, 158, 11, 0.18); color: var(--accent-2);
     }
+
+    /* Camera Scanner View */
+    .scanner-viewport {
+      position: relative; width: 100%; border-radius: 14px; overflow: hidden;
+      background: #000; border: 2px solid var(--accent); margin: 10px 0;
+      aspect-ratio: 1 / 1; max-height: 320px;
+    }
+    .scanner-viewport video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .scanner-reticle {
+      position: absolute; inset: 18%; border: 3px solid var(--ok);
+      border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+    }
+
     .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 12px; margin-top: 12px; }
     .qr-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 14px;
@@ -158,6 +191,7 @@
 </head>
 <body>
 
+  <!-- Customer Welcome Banner -->
   <div id="welcomeScreen" class="welcome-screen">
     <div class="welcome-card">
       <div id="welcomeTableBadge" class="welcome-badge">Table 01</div>
@@ -188,7 +222,7 @@
       <div>
         <strong id="bannerTitle">Park Side Cafe • Table 01</strong>
         <div id="bannerDesc" style="font-size:12px; color:var(--muted); margin-top:2px;">
-          Direct table ordering active. Your order goes straight to the kitchen.
+          Browse menu items, add extras/water if needed, enter your name, and place your order.
         </div>
       </div>
       <button class="pill accent" onclick="openTab('myorders')">🧾 My Orders & Bill</button>
@@ -202,14 +236,17 @@
       <button class="tab-btn hidden-guest staff-only" data-tab="settings" onclick="openTab('settings')">⚙️ PINs & Database</button>
     </div>
 
+    <!-- MENU TAB -->
     <div id="tab-menu">
       <div id="menuGrid" class="grid"></div>
     </div>
 
+    <!-- CUSTOMER ORDERS & POST-ORDER PAYMENT TAB -->
     <div id="tab-myorders" style="display:none;">
       <div id="myOrdersList"></div>
     </div>
 
+    <!-- STAFF TABLES, KDS & REPORTS TAB -->
     <div id="tab-kds" style="display:none;">
       <div class="banner">
         <div>
@@ -235,6 +272,7 @@
       <div id="staffOrdersList"></div>
     </div>
 
+    <!-- STAFF QR GENERATOR & DOWNLOAD TAB -->
     <div id="tab-qrs" style="display:none;">
       <div class="card" style="margin-bottom:12px;">
         <label style="font-size:13px; font-weight:700;">🌐 Live Website URL</label>
@@ -247,14 +285,15 @@
       <div id="qrGrid" class="qr-grid"></div>
     </div>
 
+    <!-- STAFF SETTINGS TAB -->
     <div id="tab-settings" style="display:none;">
       <div class="card" style="max-width:520px;">
-        <h3 style="margin-bottom:8px;">⚙️ PINs, UPI Payment & Firebase Database</h3>
+        <h3 style="margin-bottom:8px;">⚙️ PINs, UPI Fallback & Firebase Database</h3>
         <label style="font-size:12px; color:var(--muted);">Staff PIN</label>
         <input id="setStaffPin" type="text" maxlength="8" />
         <label style="font-size:12px; color:var(--muted);">Owner PIN</label>
         <input id="setOwnerPin" type="text" maxlength="8" />
-        <label style="font-size:12px; color:var(--muted);">Café UPI ID (for Customer UPI / QR Payment)</label>
+        <label style="font-size:12px; color:var(--muted);">Café UPI ID (Fallback if not scanning counter QR)</label>
         <input id="setUpiId" type="text" placeholder="parksidecafe@upi" />
         <label style="font-size:12px; color:var(--muted);">Firebase Realtime Database URL</label>
         <input id="setFirebaseUrl" type="url" placeholder="https://parksidecafe-default-rtdb.firebaseio.com" />
@@ -263,44 +302,113 @@
     </div>
   </div>
 
+  <!-- CART BAR -->
   <div id="cartBar" class="cart-bar">
     <div>
       <div id="cartSummary" style="font-size:14px; font-weight:800;">0 items • ₹0</div>
       <div id="cartTableLabel" style="font-size:11px; color:var(--muted);">Table 01</div>
     </div>
-    <button class="btn primary" onclick="openCartModal()">🛒 Place Order</button>
+    <button class="btn primary" onclick="openCartModal()">🛒 Review & Order</button>
   </div>
 
+  <!-- CUSTOMER ORDER MODAL -->
   <div id="cartModal" class="modal-bg">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3>Your Order & Payment</h3>
+        <h3>Your Order</h3>
         <button class="pill" onclick="closeModal('cartModal')">✕</button>
       </div>
+
+      <div style="font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700;">Selected Menu Items</div>
       <div id="cartItemsList"></div>
-      <label style="font-size:12px; color:var(--muted);">Payment Method</label>
-      <select id="paymentMethodSelect" onchange="toggleUpiBox()">
-        <option value="UPI">📱 UPI (GPay / PhonePe / Paytm)</option>
-        <option value="Counter Cash / Card">💵 Pay at Counter (Cash / Card)</option>
-      </select>
-      <div id="upiPayBox" class="order-box" style="display:block;">
-        <div id="upiPayInfo" style="font-size:12px; color:var(--accent-2); font-weight:700; margin-bottom:6px;">
-          UPI ID: parksidecafe@upi
-        </div>
-        <div id="upiQrPreview" style="text-align:center; margin-bottom:8px;"></div>
-        <a id="upiIntentLink" href="#" class="btn ok" style="width:100%;">💳 Open UPI App to Pay</a>
+
+      <div style="font-size:12px; color:var(--accent-2); margin:10px 0 6px; font-weight:700;">
+        Extra Items / Water & Add-ons (Extra Charge)
       </div>
-      <label style="font-size:12px; color:var(--muted);">Guest Name (Optional)</label>
+      <div id="extraAddonsBox"></div>
+
+      <label style="font-size:12px; color:var(--muted);">Custom Extra Item Name (Optional)</label>
+      <input id="customExtraNameInput" type="text" placeholder="e.g. Extra Butter, Soda, Tissue/Water" oninput="renderOrderBreakdown()" />
+
+      <label style="font-size:12px; color:var(--muted);">Custom Extra Charge (₹)</label>
+      <input id="customExtraPriceInput" type="number" min="0" step="1" placeholder="0" oninput="renderOrderBreakdown()" />
+
+      <label style="font-size:12px; color:var(--muted);">Your Name *</label>
       <input id="guestNameInput" type="text" placeholder="Enter your name" />
-      <label style="font-size:12px; color:var(--muted);">Note / Spice Preference</label>
+
+      <label style="font-size:12px; color:var(--muted);">Note / Spice Preference (Optional)</label>
       <input id="guestNoteInput" type="text" placeholder="Less sugar, extra hot, etc." />
+
+      <div id="orderBreakdownBox" class="order-box" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted);">
+          <span>Menu Items Total:</span>
+          <span id="breakdownMenuAmt">₹0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--accent-2); margin-top:4px;">
+          <span>Extras / Water Charge:</span>
+          <span id="breakdownExtraAmt">₹0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:800; margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">
+          <span>Grand Total:</span>
+          <span id="breakdownGrandAmt">₹0</span>
+        </div>
+      </div>
+
       <div style="display:flex; gap:8px;">
         <button class="btn" style="flex:1;" onclick="clearCart()">Clear</button>
-        <button class="btn primary" style="flex:2;" onclick="submitOrder()">🍳 Send Order to Kitchen</button>
+        <button class="btn primary" style="flex:2;" onclick="submitOrder()">✅ Order Karo</button>
       </div>
     </div>
   </div>
 
+  <!-- POST-ORDER PAYMENT CHOICE MODAL -->
+  <div id="postOrderPaymentModal" class="modal-bg" style="z-index: 95;">
+    <div class="modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3>✅ Order Placed — Choose Payment</h3>
+        <button class="pill" onclick="closeModal('postOrderPaymentModal')">✕</button>
+      </div>
+      <div id="postOrderSummaryBox" class="order-box"></div>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">
+        Aapka order place ho chuka hai. Ab Online Payment (Counter QR Scan) ya Offline Payment chunein:
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn ok" onclick="chooseOnlinePayment()">
+          📷 Online Payment (Scan Counter QR)
+        </button>
+        <button class="btn primary" onclick="chooseOfflinePayment()">
+          💵 Offline Payment (Cash / Counter)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COUNTER QR CAMERA SCANNER MODAL -->
+  <div id="scannerModal" class="modal-bg" style="z-index: 100;">
+    <div class="modal">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3>📷 Scan Counter QR to Pay</h3>
+        <button class="pill" onclick="closeScannerModal()">✕</button>
+      </div>
+      <div id="scannerAmountBanner" style="font-size:13px; color:var(--accent-2); font-weight:700; margin-bottom:6px;">
+        Amount to Pay: ₹0
+      </div>
+      <p id="scannerStatusText" style="font-size:12px; color:var(--muted);">
+        Camera ko counter par rakhe QR code ke saamne rakhein...
+      </p>
+      <div class="scanner-viewport">
+        <video id="qrVideo" playsinline muted></video>
+        <div class="scanner-reticle"></div>
+      </div>
+      <canvas id="qrCanvas" style="display:none;"></canvas>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+        <a id="fallbackUpiBtn" href="#" class="btn ok" style="flex:1;">💳 Direct UPI App</a>
+        <button type="button" class="btn" style="flex:1;" onclick="closeScannerModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAFF PIN MODAL -->
   <div id="pinModal" class="modal-bg">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -321,6 +429,13 @@
       { id: 4, name: "Peri Peri Fries", price: 110, desc: "Golden fries tossed in spicy peri peri" },
       { id: 5, name: "Cappuccino", price: 110, desc: "Rich espresso with steamed milk foam" },
       { id: 6, name: "Choco Brownie", price: 130, desc: "Warm fudge brownie with cocoa glaze" }
+    ];
+
+    const EXTRA_ADDONS = [
+      { id: "water_bottle", name: "Packaged Water Bottle (1L)", price: 20 },
+      { id: "extra_cheese", name: "Extra Cheese Slice", price: 30 },
+      { id: "extra_dip", name: "Extra Mayo / Peri Peri Dip", price: 25 },
+      { id: "cold_drink", name: "Chilled Soft Drink Can", price: 40 }
     ];
 
     const STORAGE_KEY = "parkside_cafe_state_v1";
@@ -357,6 +472,9 @@
       cart: [],
       orders: []
     };
+
+    let selectedExtraIds = [];
+    let latestPlacedOrder = null;
 
     function loadLocalState() {
       try {
@@ -428,4 +546,883 @@
 
     function checkNewOrderSound(list) {
       const ids = list.map(o => o.id).filter(Boolean);
-      if (!state.k
+      if (!state.knownOrderIds.length) {
+        state.knownOrderIds = ids;
+        saveLocalState();
+        return;
+      }
+      const hasNew = ids.some(id => !state.knownOrderIds.includes(id));
+      state.knownOrderIds = Array.from(new Set([...state.knownOrderIds, ...ids]));
+      saveLocalState();
+      if (hasNew && isStaffMode) {
+        playChime(false);
+        showToast("🔔 New order received!");
+      }
+    }
+
+    function cleanDbUrl() {
+      return (state.firebaseUrl || "").trim().replace(/\/+$/, "");
+    }
+
+    async function pushOrderToFirebase(order) {
+      const base = cleanDbUrl();
+      if (!base) return;
+      try {
+        await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(order.id)}.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(order)
+        });
+      } catch (e) {}
+    }
+
+    async function updateOrderFirebase(orderId, patchObj) {
+      const base = cleanDbUrl();
+      if (!base) return;
+      try {
+        await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(orderId)}.json`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patchObj)
+        });
+      } catch (e) {}
+    }
+
+    async function syncFromFirebase() {
+      const base = cleanDbUrl();
+      if (!base) return;
+      try {
+        const res = await fetch(`${base}/parksidecafe/orders.json`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && typeof data === "object") {
+          const list = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          state.orders = list;
+          checkNewOrderSound(list);
+          saveLocalState();
+          renderOrders();
+        }
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { el.style.display = "none"; }, 2600);
+    }
+
+    function enterGuestMenu() {
+      document.getElementById("welcomeScreen").classList.add("hidden");
+    }
+
+    function applyAccessUI() {
+      document.title = `Park Side Cafe — ${tableLabel}`;
+      document.getElementById("welcomeTableBadge").textContent = tableLabel;
+      document.getElementById("welcomeSubText").textContent =
+        `Welcome to Park Side Cafe (${tableLabel}). Tap below to browse the menu and order directly.`;
+      document.getElementById("headerSub").textContent =
+        isStaffMode ? `${tableLabel} • Staff / Owner Live` : `${tableLabel} • Guest Menu`;
+      document.getElementById("bannerTitle").textContent = `Park Side Cafe • ${tableLabel}`;
+      document.getElementById("cartTableLabel").textContent = tableLabel;
+      updateSoundButton();
+
+      if (isStaffMode) {
+        document.getElementById("welcomeScreen").classList.add("hidden");
+        document.getElementById("staffPortalBtn").classList.remove("hidden-guest");
+      } else {
+        document.getElementById("staffPortalBtn").classList.add("hidden-guest");
+        document.querySelectorAll(".staff-only").forEach(el => el.classList.add("hidden-guest"));
+      }
+
+      if (isStaffMode && state.staffUnlocked) {
+        document.querySelectorAll(".staff-only").forEach(el => el.classList.remove("hidden-guest"));
+      }
+    }
+
+    function openTab(tabName) {
+      if ((tabName === "kds" || tabName === "qrs" || tabName === "settings") && (!isStaffMode || !state.staffUnlocked)) {
+        openStaffPortal();
+        return;
+      }
+      ["menu", "myorders", "kds", "qrs", "settings"].forEach(t => {
+        const sec = document.getElementById("tab-" + t);
+        if (sec) sec.style.display = t === tabName ? "block" : "none";
+      });
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.tab === tabName);
+      });
+      if (tabName === "qrs") renderQRs();
+      if (tabName === "kds") { renderOrders(); syncFromFirebase(); }
+      if (tabName === "myorders") { renderOrders(); syncFromFirebase(); }
+      if (tabName === "settings") {
+        document.getElementById("setStaffPin").value = state.staffPin;
+        document.getElementById("setOwnerPin").value = state.ownerPin;
+        document.getElementById("setUpiId").value = state.upiId;
+        document.getElementById("setFirebaseUrl").value = state.firebaseUrl;
+      }
+    }
+
+    function renderMenu() {
+      const grid = document.getElementById("menuGrid");
+      grid.innerHTML = MENU_ITEMS.map(item => `
+        <div class="card">
+          <div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-desc">${item.desc}</div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <span class="item-price">₹${item.price}</span>
+            <button class="btn primary" onclick="addToCart(${item.id})">+ Add</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function addToCart(id) {
+      const item = MENU_ITEMS.find(m => m.id === id);
+      if (!item) return;
+      const found = state.cart.find(c => c.id === id);
+      if (found) found.qty += 1;
+      else state.cart.push({ id: item.id, name: item.name, price: item.price, qty: 1 });
+      saveLocalState();
+      renderCartBar();
+      showToast(`${item.name} added`);
+    }
+
+    function getMenuSubtotal() {
+      return state.cart.reduce((s, i) => s + i.qty * i.price, 0);
+    }
+
+    function getSelectedExtrasList() {
+      const list = [];
+      EXTRA_ADDONS.forEach(ex => {
+        if (selectedExtraIds.includes(ex.id)) {
+          list.push({ name: ex.name, price: ex.price, qty: 1, isExtra: true });
+        }
+      });
+      const customName = (document.getElementById("customExtraNameInput")?.value || "").trim();
+      const customCharge = Math.max(0, Number(document.getElementById("customExtraPriceInput")?.value || 0));
+      if (customCharge > 0) {
+        list.push({
+          name: customName || "Extra Item / Add-on",
+          price: customCharge,
+          qty: 1,
+          isExtra: true
+        });
+      }
+      return list;
+    }
+
+    function getExtrasSubtotal() {
+      return getSelectedExtrasList().reduce((s, e) => s + e.price * e.qty, 0);
+    }
+
+    function renderCartBar() {
+      const count = state.cart.reduce((s, i) => s + i.qty, 0);
+      const total = getMenuSubtotal();
+      document.getElementById("cartSummary").textContent = `${count} items • ₹${total}`;
+    }
+
+    function renderExtraAddonsUI() {
+      const box = document.getElementById("extraAddonsBox");
+      box.innerHTML = EXTRA_ADDONS.map(ex => {
+        const checked = selectedExtraIds.includes(ex.id) ? "checked" : "";
+        return `
+          <div class="extra-row">
+            <label class="extra-check">
+              <input type="checkbox" ${checked} onchange="toggleExtraAddon('${ex.id}')" />
+              <span>${ex.name}</span>
+            </label>
+            <strong style="color:var(--accent-2); font-size:13px;">+₹${ex.price}</strong>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function toggleExtraAddon(id) {
+      if (selectedExtraIds.includes(id)) {
+        selectedExtraIds = selectedExtraIds.filter(x => x !== id);
+      } else {
+        selectedExtraIds.push(id);
+      }
+      renderOrderBreakdown();
+    }
+
+    function renderOrderBreakdown() {
+      const menuAmt = getMenuSubtotal();
+      const extraAmt = getExtrasSubtotal();
+      const grand = menuAmt + extraAmt;
+      const mEl = document.getElementById("breakdownMenuAmt");
+      const eEl = document.getElementById("breakdownExtraAmt");
+      const gEl = document.getElementById("breakdownGrandAmt");
+      if (mEl) mEl.textContent = `₹${menuAmt}`;
+      if (eEl) eEl.textContent = `₹${extraAmt}`;
+      if (gEl) gEl.textContent = `₹${grand}`;
+    }
+
+    function buildUpiUrl(amount, noteText) {
+      const upi = encodeURIComponent((state.upiId || "parksidecafe@upi").trim());
+      const pn = encodeURIComponent("Park Side Cafe");
+      const tn = encodeURIComponent(noteText || `${tableLabel} Order`);
+      const am = encodeURIComponent(String(amount || 0));
+      return `upi://pay?pa=${upi}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+    }
+
+    /* Live Camera Scanner for Counter QR Payment */
+    let scannerStream = null;
+    let scannerLoopId = null;
+    let scannerTargetOrderId = null;
+    let scannerTargetAmount = 0;
+
+    async function openCounterQrScanner(orderId, amount) {
+      scannerTargetOrderId = orderId;
+      scannerTargetAmount = Number(amount || 0);
+      document.getElementById("scannerAmountBanner").textContent = `Amount to Pay: ₹${scannerTargetAmount}`;
+      document.getElementById("fallbackUpiBtn").href = buildUpiUrl(scannerTargetAmount, `${tableLabel} Payment`);
+      document.getElementById("scannerStatusText").textContent = "Camera khul raha hai — Counter QR ke saamne rakhein...";
+      document.getElementById("scannerModal").classList.add("open");
+
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          document.getElementById("scannerStatusText").textContent =
+            "Camera browser mein supported nahi hai. Neeche 'Direct UPI App' button se pay karein.";
+          return;
+        }
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        const video = document.getElementById("qrVideo");
+        video.srcObject = scannerStream;
+        await video.play();
+        document.getElementById("scannerStatusText").textContent = "Counter par rakha QR code frame ke andar laayein...";
+        scanFrameLoop();
+      } catch (err) {
+        document.getElementById("scannerStatusText").textContent =
+          "Camera permission allow karein ya neeche 'Direct UPI App' se payment karein.";
+      }
+    }
+
+    function closeScannerModal() {
+      if (scannerLoopId) {
+        cancelAnimationFrame(scannerLoopId);
+        scannerLoopId = null;
+      }
+      if (scannerStream) {
+        scannerStream.getTracks().forEach(t => t.stop());
+        scannerStream = null;
+      }
+      document.getElementById("scannerModal").classList.remove("open");
+    }
+
+    function normalizeScannedPaymentLink(rawData, amount) {
+      const text = (rawData || "").trim();
+      if (!text) return "";
+      if (text.toLowerCase().startsWith("upi://pay")) {
+        try {
+          const urlObj = new URL(text);
+          if (amount > 0) urlObj.searchParams.set("am", String(amount));
+          urlObj.searchParams.set("cu", "INR");
+          return urlObj.toString();
+        } catch (e) {
+          return text.includes("am=") ? text : `${text}&am=${encodeURIComponent(amount)}&cu=INR`;
+        }
+      }
+      if (/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(text)) {
+        return `upi://pay?pa=${encodeURIComponent(text)}&pn=${encodeURIComponent("Park Side Cafe")}&am=${encodeURIComponent(amount)}&cu=INR`;
+      }
+      return text;
+    }
+
+    function scanFrameLoop() {
+      const video = document.getElementById("qrVideo");
+      const canvas = document.getElementById("qrCanvas");
+      if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        scannerLoopId = requestAnimationFrame(scanFrameLoop);
+        return;
+      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      let foundCode = null;
+      if (typeof jsQR === "function") {
+        const res = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+        if (res && res.data) foundCode = res.data;
+      }
+
+      if (foundCode) {
+        closeScannerModal();
+        const payLink = normalizeScannedPaymentLink(foundCode, scannerTargetAmount);
+        showToast("Counter QR scanned! Opening payment...");
+        if (scannerTargetOrderId) {
+          markCustomerPaid(scannerTargetOrderId);
+        }
+        window.location.href = payLink;
+        return;
+      }
+      scannerLoopId = requestAnimationFrame(scanFrameLoop);
+    }
+
+    function openCartModal() {
+      const list = document.getElementById("cartItemsList");
+      if (!state.cart.length) {
+        list.innerHTML = `<p style="color:var(--muted); margin-bottom:10px;">Menu se item add karein ya neeche extra item/water chunein.</p>`;
+      } else {
+        list.innerHTML = state.cart.map(c => `
+          <div class="order-box" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>${c.name}</strong> × ${c.qty}
+              <div style="font-size:12px; color:var(--accent-2);">₹${c.price * c.qty}</div>
+            </div>
+            <button class="pill" onclick="changeQty(${c.id}, -1)">−</button>
+          </div>
+        `).join("");
+      }
+      renderExtraAddonsUI();
+      renderOrderBreakdown();
+      document.getElementById("cartModal").classList.add("open");
+    }
+
+    function changeQty(id, delta) {
+      const idx = state.cart.findIndex(c => c.id === id);
+      if (idx === -1) return;
+      state.cart[idx].qty += delta;
+      if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
+      saveLocalState();
+      renderCartBar();
+      openCartModal();
+    }
+
+    function clearCart() {
+      state.cart = [];
+      selectedExtraIds = [];
+      const cName = document.getElementById("customExtraNameInput");
+      const cPrice = document.getElementById("customExtraPriceInput");
+      if (cName) cName.value = "";
+      if (cPrice) cPrice.value = "";
+      saveLocalState();
+      renderCartBar();
+      openCartModal();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function openPostOrderPaymentModal(order) {
+      latestPlacedOrder = order;
+      document.getElementById("postOrderSummaryBox").innerHTML = `
+        <div><strong>${order.tableLabel}</strong> • Guest: <strong>${order.guestName}</strong></div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+          ${order.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+        </div>
+        <div style="font-size:15px; font-weight:800; color:var(--accent-2); margin-top:6px;">
+          Total Payable: ₹${order.total}
+        </div>
+      `;
+      document.getElementById("postOrderPaymentModal").classList.add("open");
+    }
+
+    async function chooseOnlinePayment() {
+      const ord = latestPlacedOrder;
+      closeModal("postOrderPaymentModal");
+      if (ord) {
+        ord.paymentMethod = "Online Payment (Counter QR)";
+        saveLocalState();
+        renderOrders();
+        await updateOrderFirebase(ord.id, { paymentMethod: ord.paymentMethod });
+        openCounterQrScanner(ord.id, ord.total);
+      }
+    }
+
+    async function chooseOfflinePayment() {
+      const ord = latestPlacedOrder;
+      closeModal("postOrderPaymentModal");
+      if (ord) {
+        ord.paymentMethod = "Offline Payment (Cash / Counter)";
+        ord.paymentStatus = "Offline at Counter";
+        saveLocalState();
+        renderOrders();
+        await updateOrderFirebase(ord.id, {
+          paymentMethod: ord.paymentMethod,
+          paymentStatus: ord.paymentStatus
+        });
+        showToast("Offline payment selected. Pay at counter/table.");
+      }
+    }
+
+    async function submitOrder() {
+      const guestName = (document.getElementById("guestNameInput").value || "").trim();
+      if (!guestName) {
+        showToast("Please enter your name before ordering");
+        document.getElementById("guestNameInput").focus();
+        return;
+      }
+
+      const extras = getSelectedExtrasList();
+      const combinedItems = [
+        ...state.cart.map(i => ({ ...i })),
+        ...extras
+      ];
+
+      if (!combinedItems.length) {
+        showToast("Please select a menu item or extra item");
+        return;
+      }
+
+      const total = combinedItems.reduce((s, i) => s + i.qty * i.price, 0);
+      const order = {
+        id: "ORD-" + Date.now(),
+        tableCode,
+        tableLabel,
+        guestName,
+        note: (document.getElementById("guestNoteInput").value || "").trim(),
+        items: combinedItems,
+        extraTotal: getExtrasSubtotal(),
+        total,
+        paymentMethod: "Pending Selection",
+        paymentStatus: "Pending Payment",
+        status: "Order Placed",
+        tableReleased: false,
+        createdAt: Date.now()
+      };
+
+      state.orders.unshift(order);
+      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
+      state.cart = [];
+      selectedExtraIds = [];
+      document.getElementById("guestNameInput").value = "";
+      document.getElementById("guestNoteInput").value = "";
+      document.getElementById("customExtraNameInput").value = "";
+      document.getElementById("customExtraPriceInput").value = "";
+
+      saveLocalState();
+      renderCartBar();
+      renderOrders();
+      closeModal("cartModal");
+      await pushOrderToFirebase(order);
+      openTab("myorders");
+      openPostOrderPaymentModal(order);
+    }
+
+    async function markCustomerPaid(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.paymentStatus = "Paid by Guest";
+        ord.tableReleased = true;
+      }
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, { paymentStatus: "Paid by Guest", tableReleased: true });
+      showToast("Payment done! Table is now Khali (Free).");
+    }
+
+    async function freeTableNow(code) {
+      let changed = false;
+      state.orders.forEach(o => {
+        if ((o.tableCode || "T01") === code && !o.tableReleased) {
+          o.tableReleased = true;
+          if (o.total > 0 && o.paymentStatus !== "Paid" && o.paymentStatus !== "Paid by Guest") {
+            o.paymentStatus = "Paid";
+          }
+          changed = true;
+        }
+      });
+      if (changed) {
+        saveLocalState();
+        renderOrders();
+        for (const o of state.orders) {
+          if ((o.tableCode || "T01") === code && o.tableReleased) {
+            await updateOrderFirebase(o.id, { tableReleased: true, paymentStatus: o.paymentStatus });
+          }
+        }
+      }
+      showToast(`${getTableLabel(code)} marked Khali (Free)`);
+    }
+
+    function renderTableStatusBoard() {
+      const boardEl = document.getElementById("tableStatusBoard");
+      if (!boardEl) return { freeCount: 17, busyCount: 0 };
+      const codes = ["COUNTER", ...Array.from({ length: 16 }, (_, i) => "T" + String(i + 1).padStart(2, "0"))];
+      let busyCount = 0;
+
+      const html = codes.map(code => {
+        const activeOrders = state.orders.filter(o =>
+          (o.tableCode || "T01") === code &&
+          !o.tableReleased &&
+          o.status !== "Waiter Requested"
+        );
+        const isBusy = activeOrders.length > 0;
+        if (isBusy) busyCount += 1;
+        const dueSum = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
+
+        return `
+          <div class="tbl-tile ${isBusy ? "occupied" : "free"}">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:13px;">${getTableLabel(code)}</strong>
+              <span class="${isBusy ? "tbl-status-busy" : "tbl-status-free"}">${isBusy ? "🔴 BOOKED" : "🟢 KHALI"}</span>
+            </div>
+            <div style="font-size:11px; color:var(--muted);">
+              ${isBusy ? `${activeOrders.length} active • ₹${dueSum}` : "Available for next guest"}
+            </div>
+            ${isBusy ? `<button class="btn ok" style="padding:5px 8px; font-size:11px;" onclick="freeTableNow('${code}')">✅ Mark Khali</button>` : ""}
+          </div>
+        `;
+      }).join("");
+
+      boardEl.innerHTML = html;
+      return { freeCount: codes.length - busyCount, busyCount };
+    }
+
+    function renderOrders() {
+      const myOrders = state.orders.filter(o => o.tableCode === tableCode);
+      const myEl = document.getElementById("myOrdersList");
+      myEl.innerHTML = myOrders.length ? myOrders.map(o => {
+        const isPaid = o.paymentStatus === "Paid" || o.paymentStatus === "Paid by Guest" || o.tableReleased;
+        return `
+          <div class="order-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong>${o.tableLabel} • ${o.guestName || "Guest"}</strong>
+              <span style="color:var(--accent-2); font-weight:700;">${o.status}</span>
+            </div>
+            <div style="font-size:13px; color:var(--muted); margin:6px 0;">
+              ${o.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong>Total: ₹${o.total}</strong>
+              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${isPaid ? "Paid • Table Free" : (o.paymentStatus || "Pending Payment")}</span>
+            </div>
+            ${!isPaid && o.total > 0 ? `
+              <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                <button class="btn ok" onclick="openCounterQrScanner('${o.id}', ${o.total})">📷 Online Payment (Scan QR)</button>
+                <button class="btn primary" onclick="markCustomerPaid('${o.id}')">💵 Offline / Paid Done</button>
+              </div>
+            ` : ""}
+          </div>
+        `;
+      }).join("") : `<p style="color:var(--muted);">No orders placed for ${tableLabel} yet.</p>`;
+
+      const { freeCount, busyCount } = renderTableStatusBoard();
+      const staffEl = document.getElementById("staffOrdersList");
+      const totalRev = state.orders.reduce((s, o) => s + (o.total || 0), 0);
+      document.getElementById("liveStatsText").textContent =
+        `Khali: ${freeCount} • Booked: ${busyCount} • Orders: ${state.orders.length} • Revenue: ₹${totalRev}`;
+
+      staffEl.innerHTML = state.orders.length ? state.orders.map(o => {
+        const isPaid = o.paymentStatus === "Paid" || o.paymentStatus === "Paid by Guest";
+        const isFree = Boolean(o.tableReleased);
+        return `
+          <div class="order-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong>${o.tableLabel} (${o.guestName || "Guest"}) • ₹${o.total}</strong>
+              <span style="color:var(--ok); font-weight:700;">${o.status}</span>
+            </div>
+            <div style="font-size:12px; margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${o.paymentStatus || "Pending Payment"} • ${o.paymentMethod || "Pending"}</span>
+              <span class="${isFree ? "badge-pay" : "badge-unpaid"}">${isFree ? "🟢 Table Khali" : "🔴 Table Booked"}</span>
+            </div>
+            <div style="font-size:13px; color:var(--muted); margin:6px 0;">
+              ${o.items.map(i => `${i.name} × ${i.qty}`).join(", ")}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+              <button class="btn ok" onclick="setStatus('${o.id}', 'In Kitchen')">🍳 Preparing</button>
+              <button class="btn primary" onclick="setStatus('${o.id}', 'Served')">🍽️ Served</button>
+              <button class="btn" onclick="setPaymentStatus('${o.id}', 'Paid')">💰 Mark Paid & Free Table</button>
+            </div>
+          </div>
+        `;
+      }).join("") : `<p style="color:var(--muted);">No live orders yet.</p>`;
+    }
+
+    async function setStatus(orderId, status) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) ord.status = status;
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, { status });
+      showToast(`Status: ${status}`);
+    }
+
+    async function setPaymentStatus(orderId, paymentStatus) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.paymentStatus = paymentStatus;
+        if (paymentStatus === "Paid" || paymentStatus === "Paid by Guest") {
+          ord.tableReleased = true;
+        }
+      }
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, { paymentStatus, tableReleased: true });
+      showToast("Payment Paid & Table Khali!");
+    }
+
+    function csvCell(val) {
+      const str = String(val ?? "").replace(/"/g, '""');
+      return `"${str}"`;
+    }
+
+    function downloadCsvReport() {
+      const rows = [
+        ["Order ID", "Date & Time", "Table", "Table Status", "Guest Name", "Items", "Note", "Payment Method", "Payment Status", "Total (INR)", "Status"]
+      ];
+      state.orders.forEach(o => {
+        const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
+        const itemsText = Array.isArray(o.items)
+          ? o.items.map(i => `${i.name} x${i.qty}`).join(" | ")
+          : "";
+        rows.push([
+          o.id || "",
+          dt,
+          o.tableLabel || o.tableCode || "",
+          o.tableReleased ? "Khali (Free)" : "Booked",
+          o.guestName || "Guest",
+          itemsText,
+          o.note || "",
+          o.paymentMethod || "Pending",
+          o.paymentStatus || "Pending Payment",
+          o.total || 0,
+          o.status || ""
+        ]);
+      });
+      const totalRev = state.orders.reduce((s, o) => s + (o.total || 0), 0);
+      rows.push(["", "", "", "", "", "", "", "", "TOTAL REVENUE", totalRev, ""]);
+
+      const csvText = rows.map(r => r.map(csvCell).join(",")).join("\n");
+      const blob = new Blob(["\uFEFF" + csvText], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `Park-Side-Cafe-Report-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("CSV Report downloaded");
+    }
+
+    function printSalesReport() {
+      const totalRev = state.orders.reduce((s, o) => s + (o.total || 0), 0);
+      const win = window.open("", "_blank");
+      if (!win) {
+        window.print();
+        return;
+      }
+      const rowsHtml = state.orders.map(o => {
+        const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
+        const itemsText = Array.isArray(o.items)
+          ? o.items.map(i => `${i.name} × ${i.qty}`).join(", ")
+          : "";
+        return `<tr>
+          <td>${o.id || ""}</td>
+          <td>${dt}</td>
+          <td>${o.tableLabel || ""}</td>
+          <td>${o.tableReleased ? "Khali" : "Booked"}</td>
+          <td>${o.guestName || "Guest"}</td>
+          <td>${itemsText}</td>
+          <td>${o.paymentStatus || "Pending"}</td>
+          <td>${o.status || ""}</td>
+          <td style="text-align:right;">₹${o.total || 0}</td>
+        </tr>`;
+      }).join("");
+
+      win.document.write(`
+        <html><head><title>Park Side Cafe — Sales Report</title>
+        <style>
+          body { font-family: system-ui, sans-serif; padding: 20px; color: #111; }
+          h2 { margin-bottom: 4px; }
+          p { color: #555; margin-bottom: 14px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f3f4f6; }
+        </style></head><body>
+          <h2>Park Side Cafe — Orders & Sales Report</h2>
+          <p>Total Orders: ${state.orders.length} • Total Revenue: ₹${totalRev}</p>
+          <table>
+            <thead><tr>
+              <th>Order ID</th><th>Time</th><th>Table</th><th>Seat Status</th><th>Guest</th><th>Items</th><th>Payment</th><th>Status</th><th>Amount</th>
+            </tr></thead>
+            <tbody>${rowsHtml || '<tr><td colspan="9">No orders recorded yet.</td></tr>'}</tbody>
+          </table>
+          <script>window.print();<\/script>
+        </body></html>
+      `);
+      win.document.close();
+    }
+
+    async function callWaiter() {
+      const callObj = {
+        id: "CALL-" + Date.now(),
+        tableCode,
+        tableLabel,
+        guestName: "Waiter Call",
+        note: "Customer requested assistance",
+        items: [{ name: "Call Waiter Request", qty: 1, price: 0 }],
+        total: 0,
+        paymentMethod: "N/A",
+        paymentStatus: "N/A",
+        status: "Waiter Requested",
+        tableReleased: true,
+        createdAt: Date.now()
+      };
+      state.orders.unshift(callObj);
+      state.knownOrderIds = Array.from(new Set([callObj.id, ...state.knownOrderIds]));
+      saveLocalState();
+      await pushOrderToFirebase(callObj);
+      showToast(`Waiter called for ${tableLabel}`);
+    }
+
+    function openStaffPortal() {
+      if (!isStaffMode) return;
+      document.getElementById("pinInput").value = "";
+      document.getElementById("pinModal").classList.add("open");
+    }
+
+    function verifyPin() {
+      const pin = (document.getElementById("pinInput").value || "").trim();
+      if (pin === state.staffPin || pin === state.ownerPin) {
+        state.staffUnlocked = true;
+        saveLocalState();
+        closeModal("pinModal");
+        applyAccessUI();
+        openTab("kds");
+        playChime(true);
+        showToast("Staff / Owner unlocked");
+      } else {
+        showToast("Invalid PIN");
+      }
+    }
+
+    function saveSettings() {
+      const sPin = (document.getElementById("setStaffPin").value || "").trim();
+      const oPin = (document.getElementById("setOwnerPin").value || "").trim();
+      const upi = (document.getElementById("setUpiId").value || "").trim();
+      const dbUrl = (document.getElementById("setFirebaseUrl").value || "").trim();
+      if (sPin) state.staffPin = sPin;
+      if (oPin) state.ownerPin = oPin;
+      if (upi) state.upiId = upi;
+      state.firebaseUrl = dbUrl;
+      saveLocalState();
+      showToast("Settings saved!");
+      syncFromFirebase();
+    }
+
+    function makeQrDataUrl(text) {
+      try {
+        const qr = qrcode(0, "M");
+        qr.addData(text);
+        qr.make();
+        return qr.createDataURL(6, 2);
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function buildQrCardPng(label, url, qrDataUrl) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 420;
+          canvas.height = 520;
+          const ctx = canvas.getContext("2d");
+
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 8;
+          ctx.strokeRect(14, 14, canvas.width - 28, canvas.height - 28);
+
+          ctx.fillStyle = "#111827";
+          ctx.font = "bold 28px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("Park Side Cafe", canvas.width / 2, 68);
+
+          ctx.fillStyle = "#b45309";
+          ctx.font = "bold 24px system-ui, sans-serif";
+          ctx.fillText(label, canvas.width / 2, 105);
+
+          ctx.drawImage(img, 85, 130, 250, 250);
+
+          ctx.fillStyle = "#374151";
+          ctx.font = "600 16px system-ui, sans-serif";
+          ctx.fillText("Scan to View Menu & Order", canvas.width / 2, 418);
+
+          ctx.fillStyle = "#6b7280";
+          ctx.font = "12px system-ui, sans-serif";
+          ctx.fillText(url, canvas.width / 2, 452);
+
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = () => resolve(qrDataUrl);
+        img.src = qrDataUrl;
+      });
+    }
+
+    async function downloadSingleQr(code) {
+      let base = (document.getElementById("baseUrlInput").value || "").trim();
+      if (!base.endsWith("/")) base += "/";
+      const label = getTableLabel(code);
+      const url = `${base}?table=${code}`;
+      const qrSrc = makeQrDataUrl(url);
+      if (!qrSrc) return;
+      const cardPng = await buildQrCardPng(label, url, qrSrc);
+      const a = document.createElement("a");
+      a.href = cardPng;
+      a.download = `Park-Side-Cafe-${code}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`${label} QR downloaded`);
+    }
+
+    async function downloadAllQrCards() {
+      const codes = ["COUNTER", ...Array.from({ length: 16 }, (_, i) => "T" + String(i + 1).padStart(2, "0"))];
+      showToast("Downloading Counter + 16 QR cards...");
+      for (let i = 0; i < codes.length; i++) {
+        await downloadSingleQr(codes[i]);
+        await new Promise(r => setTimeout(r, 180));
+      }
+      showToast("All 17 QR PNG cards downloaded!");
+    }
+
+    function renderQRs() {
+      let base = (document.getElementById("baseUrlInput").value || "").trim();
+      if (!base.endsWith("/")) base += "/";
+      const codes = ["COUNTER", ...Array.from({ length: 16 }, (_, i) => "T" + String(i + 1).padStart(2, "0"))];
+      document.getElementById("qrGrid").innerHTML = codes.map(code => {
+        const label = getTableLabel(code);
+        const url = `${base}?table=${code}`;
+        const imgSrc = makeQrDataUrl(url);
+        return `
+          <div class="qr-card">
+            <div style="font-size:11px; color:var(--accent-2); font-weight:700;">Park Side Cafe</div>
+            <div style="font-size:15px; font-weight:800;">${label}</div>
+            ${imgSrc ? `<img src="${imgSrc}" alt="Park Side Cafe - ${label}" />` : ""}
+            <a href="${url}" target="_blank" style="font-size:11px; color:var(--muted); word-break:break-all;">${url}</a>
+            <button class="btn primary no-print" onclick="downloadSingleQr('${code}')">⬇️ Download PNG</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    loadLocalState();
+    applyAccessUI();
+    renderMenu();
+    renderCartBar();
+    renderOrders();
+    if (cleanDbUrl()) {
+      syncFromFirebase();
+      setInterval(syncFromFirebase, 6000);
+    }
+  </script>
+</body>
+</html>
