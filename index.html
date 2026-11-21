@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Park Side Cafe — Welcome</title>
+  <title>Park Side Cafe — Ordering & Live System</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #0f1115;
@@ -17,6 +18,7 @@
       --accent-2: #fbbf24;
       --ok: #10b981;
       --warn: #ef4444;
+      --info: #38bdf8;
       --border: rgba(255, 255, 255, 0.09);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
@@ -64,7 +66,7 @@
     .pill.accent { background: var(--accent); color: #111; border: 0; font-weight: 700; }
     .pill.ok { background: var(--ok); color: #052016; border: 0; font-weight: 700; }
 
-    .container { max-width: 980px; margin: 0 auto; padding: 16px; }
+    .container { max-width: 1020px; margin: 0 auto; padding: 16px; }
     .banner {
       background: linear-gradient(135deg, rgba(245,158,11,0.16), rgba(245,158,11,0.04));
       border: 1px solid rgba(245,158,11,0.3); border-radius: 16px;
@@ -94,21 +96,54 @@
     }
     .btn.primary { background: var(--accent); color: #111; border: 0; }
     .btn.ok { background: var(--ok); color: #062118; border: 0; }
+    .btn.info { background: var(--info); color: #072233; border: 0; }
     .btn.warn { background: var(--warn); color: #fff; border: 0; }
 
-    /* Extra / Add-ons Box */
+    /* Extra / Add-ons */
     .extra-row {
       display: flex; justify-content: space-between; align-items: center; gap: 10px;
       background: var(--card-2); border: 1px solid var(--border); border-radius: 12px;
       padding: 10px 12px; margin-bottom: 8px;
     }
     .extra-check {
-      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
-      flex: 1;
+      display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; flex: 1;
     }
     .extra-check input[type="checkbox"] {
       width: auto; margin: 0; accent-color: var(--accent); transform: scale(1.15);
     }
+
+    /* Live Kitchen Timer Banner for Customer */
+    .kitchen-tracker {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(56, 189, 248, 0.08));
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 14px; padding: 12px; margin: 10px 0;
+    }
+    .timer-pill {
+      display: inline-block; background: rgba(245, 158, 11, 0.2); color: var(--accent-2);
+      border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 800; margin-top: 6px;
+    }
+    .served-pill {
+      display: inline-block; background: rgba(16, 185, 129, 0.22); color: var(--ok);
+      border: 1px solid rgba(16, 185, 129, 0.45); padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 800; margin-top: 6px;
+    }
+
+    /* Mini Waiting Game */
+    .game-box {
+      background: var(--card); border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 18px; padding: 16px; text-align: center;
+    }
+    .game-arena {
+      position: relative; width: 100%; height: 220px; background: #10131a;
+      border: 1px dashed rgba(255,255,255,0.2); border-radius: 14px;
+      margin: 12px 0; overflow: hidden; user-select: none;
+    }
+    .game-target {
+      position: absolute; font-size: 30px; cursor: pointer;
+      transition: transform 0.08s ease;
+    }
+    .game-target:active { transform: scale(1.25); }
 
     /* Table Status Board */
     .table-board {
@@ -135,7 +170,7 @@
     }
     .modal-bg.open { display: flex; }
     .modal {
-      width: 100%; max-width: 470px; background: var(--card); border: 1px solid var(--border);
+      width: 100%; max-width: 480px; background: var(--card); border: 1px solid var(--border);
       border-radius: 18px; padding: 18px; max-height: 90vh; overflow-y: auto;
     }
     input, select {
@@ -154,16 +189,20 @@
       display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
       background: rgba(245, 158, 11, 0.18); color: var(--accent-2);
     }
+    .tip-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 12px; }
+    .tip-chip {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .tip-chip.active { background: var(--accent); color: #111; border-color: var(--accent); }
 
     /* Camera Scanner View */
     .scanner-viewport {
       position: relative; width: 100%; border-radius: 14px; overflow: hidden;
       background: #000; border: 2px solid var(--accent); margin: 10px 0;
-      aspect-ratio: 1 / 1; max-height: 320px;
+      aspect-ratio: 1 / 1; max-height: 310px;
     }
-    .scanner-viewport video {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-    }
+    .scanner-viewport video { width: 100%; height: 100%; object-fit: cover; display: block; }
     .scanner-reticle {
       position: absolute; inset: 18%; border: 3px solid var(--ok);
       border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
@@ -222,42 +261,68 @@
       <div>
         <strong id="bannerTitle">Park Side Cafe • Table 01</strong>
         <div id="bannerDesc" style="font-size:12px; color:var(--muted); margin-top:2px;">
-          Browse menu items, add extras/water if needed, enter your name, and place your order.
+          Order items, add water/extras, play mini game while waiting, and pay easily after dinner/service.
         </div>
       </div>
-      <button class="pill accent" onclick="openTab('myorders')">🧾 My Orders & Bill</button>
+      <button class="pill accent" onclick="openTab('myorders')">🧾 My Bill & Orders</button>
     </div>
 
     <div id="tabsBar" class="tabs">
       <button class="tab-btn active" data-tab="menu" onclick="openTab('menu')">☕ Menu</button>
-      <button class="tab-btn" data-tab="myorders" onclick="openTab('myorders')">🧾 My Orders</button>
-      <button class="tab-btn hidden-guest staff-only" data-tab="kds" onclick="openTab('kds')">🔥 Tables & Live Orders</button>
+      <button class="tab-btn" data-tab="myorders" onclick="openTab('myorders')">🧾 My Bill & Status</button>
+      <button class="tab-btn" data-tab="game" onclick="openTab('game')">🎮 Play Game</button>
+      <button class="tab-btn hidden-guest staff-only" data-tab="kds" onclick="openTab('kds')">🔥 Kitchen & Tables</button>
+      <button class="tab-btn hidden-guest staff-only" data-tab="stafforder" onclick="openTab('stafforder')">➕ Staff Table Order</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="qrs" onclick="openTab('qrs')">📲 Counter + 16 QRs</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="settings" onclick="openTab('settings')">⚙️ PINs & Database</button>
     </div>
 
-    <!-- MENU TAB -->
+    <!-- CUSTOMER MENU TAB -->
     <div id="tab-menu">
       <div id="menuGrid" class="grid"></div>
     </div>
 
-    <!-- CUSTOMER ORDERS & POST-ORDER PAYMENT TAB -->
+    <!-- CUSTOMER MY BILL & LIVE KITCHEN STATUS TAB -->
     <div id="tab-myorders" style="display:none;">
       <div id="myOrdersList"></div>
     </div>
 
-    <!-- STAFF TABLES, KDS & REPORTS TAB -->
+    <!-- CUSTOMER MINI GAME TAB (WHILE FOOD IS IN KITCHEN) -->
+    <div id="tab-game" style="display:none;">
+      <div class="game-box">
+        <h3 style="margin-bottom:4px;">☕ Catch the Coffee & Snacks!</h3>
+        <p style="font-size:12px; color:var(--muted);">
+          Jab tak aapka order kitchen mein ready ho raha hai, tap karke score banayein!
+        </p>
+        <div style="display:flex; justify-content:center; gap:16px; margin-top:10px; font-weight:800;">
+          <span style="color:var(--accent-2);">Score: <span id="gameScore">0</span></span>
+          <span style="color:var(--ok);">Best: <span id="gameBest">0</span></span>
+        </div>
+        <div id="gameArena" class="game-arena">
+          <div id="gameTarget" class="game-target" style="left:45%; top:42%;" onclick="hitGameTarget()">☕</div>
+        </div>
+        <button class="btn primary" onclick="resetGame()">🔄 Restart Game</button>
+      </div>
+    </div>
+
+    <!-- STAFF KITCHEN, TABLES & EXCEL REPORTS TAB -->
     <div id="tab-kds" style="display:none;">
       <div class="banner">
         <div>
-          <strong>Live Kitchen, Table Status & Sales Report</strong>
+          <strong>Live Kitchen, Table Status & Excel Reports</strong>
           <div id="liveStatsText" style="font-size:12px; color:var(--muted);">Khali: 17 • Booked: 0 • Orders: 0 • Revenue: ₹0</div>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="pill" onclick="playChime(true)">🔊 Test Sound</button>
-          <button class="pill" onclick="syncFromFirebase()">🔄 Sync Now</button>
-          <button class="pill ok" onclick="downloadCsvReport()">📥 Download CSV Report</button>
-          <button class="pill accent" onclick="printSalesReport()">🖨️ Print Report</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="reportPeriodSelect" style="width:auto; margin:0; padding:7px 10px; font-size:12px;">
+            <option value="daily">📅 Daily Report (Aaj)</option>
+            <option value="weekly">📆 Weekly Report (7 Days)</option>
+            <option value="monthly">🗓️ Monthly Report (Is Mahine)</option>
+            <option value="yearly">📊 Yearly Report (Is Saal)</option>
+            <option value="all">🗂️ All-Time Report</option>
+          </select>
+          <button class="pill ok" onclick="downloadExcelReport()">📥 Download Excel (.xlsx)</button>
+          <button class="pill accent" onclick="printSalesReport()">🖨️ Print</button>
+          <button class="pill" onclick="syncFromFirebase()">🔄 Sync</button>
         </div>
       </div>
 
@@ -270,6 +335,54 @@
       </div>
 
       <div id="staffOrdersList"></div>
+    </div>
+
+    <!-- STAFF / OWNER MANUAL ORDER FOR ANY TABLE TAB -->
+    <div id="tab-stafforder" style="display:none;">
+      <div class="card" style="max-width:650px;">
+        <h3 style="margin-bottom:8px;">➕ Staff / Owner — Place Order for Any Table</h3>
+        <label style="font-size:12px; color:var(--muted);">Select Table / Counter *</label>
+        <select id="staffTableSelect">
+          <option value="COUNTER">Counter Pickup</option>
+          <option value="T01">Table 01</option>
+          <option value="T02">Table 02</option>
+          <option value="T03">Table 03</option>
+          <option value="T04">Table 04</option>
+          <option value="T05">Table 05</option>
+          <option value="T06">Table 06</option>
+          <option value="T07">Table 07</option>
+          <option value="T08">Table 08</option>
+          <option value="T09">Table 09</option>
+          <option value="T10">Table 10</option>
+          <option value="T11">Table 11</option>
+          <option value="T12">Table 12</option>
+          <option value="T13">Table 13</option>
+          <option value="T14">Table 14</option>
+          <option value="T15">Table 15</option>
+          <option value="T16">Table 16</option>
+        </select>
+
+        <label style="font-size:12px; color:var(--muted);">Customer Name *</label>
+        <input id="staffGuestNameInput" type="text" placeholder="Enter customer name" />
+
+        <div style="font-size:12px; color:var(--accent-2); font-weight:700; margin-bottom:8px;">Select Menu Items</div>
+        <div id="staffMenuPicker" style="margin-bottom:12px;"></div>
+
+        <label style="font-size:12px; color:var(--muted);">Extra Water / Add-on Charge (₹ Optional)</label>
+        <input id="staffExtraChargeInput" type="number" min="0" step="1" placeholder="0" oninput="updateStaffOrderPreview()" />
+
+        <label style="font-size:12px; color:var(--muted);">Prep Time (Minutes)</label>
+        <input id="staffPrepMinsInput" type="number" min="1" max="120" value="15" />
+
+        <div class="order-box" style="display:flex; justify-content:space-between; align-items:center;">
+          <strong>Total Order Amount:</strong>
+          <strong id="staffOrderTotalText" style="color:var(--accent-2); font-size:16px;">₹0</strong>
+        </div>
+
+        <button class="btn primary" style="width:100%;" onclick="submitStaffManualOrder()">
+          🍳 Place & Send Order to Kitchen
+        </button>
+      </div>
     </div>
 
     <!-- STAFF QR GENERATOR & DOWNLOAD TAB -->
@@ -311,7 +424,7 @@
     <button class="btn primary" onclick="openCartModal()">🛒 Review & Order</button>
   </div>
 
-  <!-- CUSTOMER ORDER MODAL -->
+  <!-- CUSTOMER ORDER MODAL (ONLY NAME + EXTRA BOTTLE/ADD-ONS + ORDER BUTTON) -->
   <div id="cartModal" class="modal-bg">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -319,37 +432,31 @@
         <button class="pill" onclick="closeModal('cartModal')">✕</button>
       </div>
 
-      <div style="font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700;">Selected Menu Items</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:6px; font-weight:700;">Selected Items</div>
       <div id="cartItemsList"></div>
 
       <div style="font-size:12px; color:var(--accent-2); margin:10px 0 6px; font-weight:700;">
-        Extra Items / Water & Add-ons (Extra Charge)
+        Extra Water Bottle / Add-ons (Optional)
       </div>
       <div id="extraAddonsBox"></div>
 
-      <label style="font-size:12px; color:var(--muted);">Custom Extra Item Name (Optional)</label>
-      <input id="customExtraNameInput" type="text" placeholder="e.g. Extra Butter, Soda, Tissue/Water" oninput="renderOrderBreakdown()" />
-
-      <label style="font-size:12px; color:var(--muted);">Custom Extra Charge (₹)</label>
-      <input id="customExtraPriceInput" type="number" min="0" step="1" placeholder="0" oninput="renderOrderBreakdown()" />
-
       <label style="font-size:12px; color:var(--muted);">Your Name *</label>
-      <input id="guestNameInput" type="text" placeholder="Enter your name" />
+      <input id="guestNameInput" type="text" placeholder="Apna naam likhein" />
 
-      <label style="font-size:12px; color:var(--muted);">Note / Spice Preference (Optional)</label>
+      <label style="font-size:12px; color:var(--muted);">Note (Optional)</label>
       <input id="guestNoteInput" type="text" placeholder="Less sugar, extra hot, etc." />
 
-      <div id="orderBreakdownBox" class="order-box" style="margin-bottom:12px;">
+      <div class="order-box" style="margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted);">
-          <span>Menu Items Total:</span>
+          <span>Items Total:</span>
           <span id="breakdownMenuAmt">₹0</span>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--accent-2); margin-top:4px;">
-          <span>Extras / Water Charge:</span>
+          <span>Extra Water / Add-ons:</span>
           <span id="breakdownExtraAmt">₹0</span>
         </div>
         <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:800; margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">
-          <span>Grand Total:</span>
+          <span>Order Total:</span>
           <span id="breakdownGrandAmt">₹0</span>
         </div>
       </div>
@@ -361,24 +468,45 @@
     </div>
   </div>
 
-  <!-- POST-ORDER PAYMENT CHOICE MODAL -->
-  <div id="postOrderPaymentModal" class="modal-bg" style="z-index: 95;">
+  <!-- CUSTOMER BILL & PAYMENT MODAL (TIP + EXTRA PAYMENT + ONLINE/OFFLINE AT PAYMENT TIME) -->
+  <div id="billPayModal" class="modal-bg" style="z-index: 95;">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <h3>✅ Order Placed — Choose Payment</h3>
-        <button class="pill" onclick="closeModal('postOrderPaymentModal')">✕</button>
+        <h3>🧾 My Bill & Payment</h3>
+        <button class="pill" onclick="closeModal('billPayModal')">✕</button>
       </div>
-      <div id="postOrderSummaryBox" class="order-box"></div>
-      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">
-        Aapka order place ho chuka hai. Ab Online Payment (Counter QR Scan) ya Offline Payment chunein:
-      </p>
+      <div id="billPayOrderDetails" class="order-box"></div>
+
+      <label style="font-size:12px; color:var(--muted);">Add Tip for Staff (₹ Optional)</label>
+      <div class="tip-chips">
+        <button type="button" class="tip-chip active" onclick="setBillTip(0, this)">No Tip</button>
+        <button type="button" class="tip-chip" onclick="setBillTip(10, this)">+₹10</button>
+        <button type="button" class="tip-chip" onclick="setBillTip(20, this)">+₹20</button>
+        <button type="button" class="tip-chip" onclick="setBillTip(50, this)">+₹50</button>
+      </div>
+      <input id="billTipInput" type="number" min="0" step="1" value="0" oninput="recalcBillPayModal()" />
+
+      <label style="font-size:12px; color:var(--muted);">Extra Payment / Custom Charge (₹ Optional)</label>
+      <input id="billExtraPayInput" type="number" min="0" step="1" value="0" oninput="recalcBillPayModal()" />
+
+      <div class="order-box" style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted);">
+          <span>Order Bill:</span>
+          <span id="billBaseAmt">₹0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--accent-2); margin-top:4px;">
+          <span>Tip + Extra Payment:</span>
+          <span id="billTipExtraAmt">₹0</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:800; margin-top:6px; padding-top:6px; border-top:1px solid var(--border);">
+          <span>Final Payable:</span>
+          <span id="billFinalPayableAmt">₹0</span>
+        </div>
+      </div>
+
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button class="btn ok" onclick="chooseOnlinePayment()">
-          📷 Online Payment (Scan Counter QR)
-        </button>
-        <button class="btn primary" onclick="chooseOfflinePayment()">
-          💵 Offline Payment (Cash / Counter)
-        </button>
+        <button class="btn ok" onclick="payBillOnlineScanner()">📷 Online Payment (Scan Counter QR)</button>
+        <button class="btn primary" onclick="payBillOfflineCounter()">💵 Offline Payment (Cash / Counter)</button>
       </div>
     </div>
   </div>
@@ -438,7 +566,7 @@
       { id: "cold_drink", name: "Chilled Soft Drink Can", price: 40 }
     ];
 
-    const STORAGE_KEY = "parkside_cafe_state_v1";
+    const STORAGE_KEY = "parkside_cafe_state_v2";
     const params = new URLSearchParams(window.location.search);
     const isStaffMode = params.get("mode") === "staff" || params.get("mode") === "owner";
 
@@ -474,7 +602,10 @@
     };
 
     let selectedExtraIds = [];
-    let latestPlacedOrder = null;
+    let staffQuantities = {};
+    let activeBillOrderId = null;
+    let gameScore = 0;
+    let gameBest = Number(localStorage.getItem("parkside_game_best") || 0);
 
     function loadLocalState() {
       try {
@@ -556,7 +687,7 @@
       saveLocalState();
       if (hasNew && isStaffMode) {
         playChime(false);
-        showToast("🔔 New order received!");
+        showToast("🔔 Naya order aaya hai!");
       }
     }
 
@@ -621,11 +752,12 @@
       document.title = `Park Side Cafe — ${tableLabel}`;
       document.getElementById("welcomeTableBadge").textContent = tableLabel;
       document.getElementById("welcomeSubText").textContent =
-        `Welcome to Park Side Cafe (${tableLabel}). Tap below to browse the menu and order directly.`;
+        `Welcome to Park Side Cafe (${tableLabel}). Tap below to browse the menu and place your order.`;
       document.getElementById("headerSub").textContent =
         isStaffMode ? `${tableLabel} • Staff / Owner Live` : `${tableLabel} • Guest Menu`;
       document.getElementById("bannerTitle").textContent = `Park Side Cafe • ${tableLabel}`;
       document.getElementById("cartTableLabel").textContent = tableLabel;
+      document.getElementById("gameBest").textContent = String(gameBest);
       updateSoundButton();
 
       if (isStaffMode) {
@@ -642,11 +774,11 @@
     }
 
     function openTab(tabName) {
-      if ((tabName === "kds" || tabName === "qrs" || tabName === "settings") && (!isStaffMode || !state.staffUnlocked)) {
+      if ((tabName === "kds" || tabName === "stafforder" || tabName === "qrs" || tabName === "settings") && (!isStaffMode || !state.staffUnlocked)) {
         openStaffPortal();
         return;
       }
-      ["menu", "myorders", "kds", "qrs", "settings"].forEach(t => {
+      ["menu", "myorders", "game", "kds", "stafforder", "qrs", "settings"].forEach(t => {
         const sec = document.getElementById("tab-" + t);
         if (sec) sec.style.display = t === tabName ? "block" : "none";
       });
@@ -654,6 +786,7 @@
         btn.classList.toggle("active", btn.dataset.tab === tabName);
       });
       if (tabName === "qrs") renderQRs();
+      if (tabName === "stafforder") renderStaffOrderForm();
       if (tabName === "kds") { renderOrders(); syncFromFirebase(); }
       if (tabName === "myorders") { renderOrders(); syncFromFirebase(); }
       if (tabName === "settings") {
@@ -662,6 +795,28 @@
         document.getElementById("setUpiId").value = state.upiId;
         document.getElementById("setFirebaseUrl").value = state.firebaseUrl;
       }
+    }
+
+    /* Mini Waiting Game */
+    function hitGameTarget() {
+      const icons = ["☕", "🥪", "🍟", "🧁", "🥤"];
+      gameScore += 1;
+      if (gameScore > gameBest) {
+        gameBest = gameScore;
+        localStorage.setItem("parkside_game_best", String(gameBest));
+      }
+      document.getElementById("gameScore").textContent = String(gameScore);
+      document.getElementById("gameBest").textContent = String(gameBest);
+      const target = document.getElementById("gameTarget");
+      target.textContent = icons[Math.floor(Math.random() * icons.length)];
+      target.style.left = Math.floor(8 + Math.random() * 78) + "%";
+      target.style.top = Math.floor(10 + Math.random() * 72) + "%";
+    }
+
+    function resetGame() {
+      gameScore = 0;
+      document.getElementById("gameScore").textContent = "0";
+      hitGameTarget();
     }
 
     function renderMenu() {
@@ -702,16 +857,6 @@
           list.push({ name: ex.name, price: ex.price, qty: 1, isExtra: true });
         }
       });
-      const customName = (document.getElementById("customExtraNameInput")?.value || "").trim();
-      const customCharge = Math.max(0, Number(document.getElementById("customExtraPriceInput")?.value || 0));
-      if (customCharge > 0) {
-        list.push({
-          name: customName || "Extra Item / Add-on",
-          price: customCharge,
-          qty: 1,
-          isExtra: true
-        });
-      }
       return list;
     }
 
@@ -754,20 +899,340 @@
       const menuAmt = getMenuSubtotal();
       const extraAmt = getExtrasSubtotal();
       const grand = menuAmt + extraAmt;
-      const mEl = document.getElementById("breakdownMenuAmt");
-      const eEl = document.getElementById("breakdownExtraAmt");
-      const gEl = document.getElementById("breakdownGrandAmt");
-      if (mEl) mEl.textContent = `₹${menuAmt}`;
-      if (eEl) eEl.textContent = `₹${extraAmt}`;
-      if (gEl) gEl.textContent = `₹${grand}`;
+      document.getElementById("breakdownMenuAmt").textContent = `₹${menuAmt}`;
+      document.getElementById("breakdownExtraAmt").textContent = `₹${extraAmt}`;
+      document.getElementById("breakdownGrandAmt").textContent = `₹${grand}`;
     }
 
-    function buildUpiUrl(amount, noteText) {
-      const upi = encodeURIComponent((state.upiId || "parksidecafe@upi").trim());
-      const pn = encodeURIComponent("Park Side Cafe");
-      const tn = encodeURIComponent(noteText || `${tableLabel} Order`);
-      const am = encodeURIComponent(String(amount || 0));
-      return `upi://pay?pa=${upi}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+    function openCartModal() {
+      const list = document.getElementById("cartItemsList");
+      if (!state.cart.length) {
+        list.innerHTML = `<p style="color:var(--muted); margin-bottom:10px;">Menu se item add karein ya neeche water bottle/add-on chunein.</p>`;
+      } else {
+        list.innerHTML = state.cart.map(c => `
+          <div class="order-box" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>${c.name}</strong> × ${c.qty}
+              <div style="font-size:12px; color:var(--accent-2);">₹${c.price * c.qty}</div>
+            </div>
+            <button class="pill" onclick="changeQty(${c.id}, -1)">−</button>
+          </div>
+        `).join("");
+      }
+      renderExtraAddonsUI();
+      renderOrderBreakdown();
+      document.getElementById("cartModal").classList.add("open");
+    }
+
+    function changeQty(id, delta) {
+      const idx = state.cart.findIndex(c => c.id === id);
+      if (idx === -1) return;
+      state.cart[idx].qty += delta;
+      if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
+      saveLocalState();
+      renderCartBar();
+      openCartModal();
+    }
+
+    function clearCart() {
+      state.cart = [];
+      selectedExtraIds = [];
+      saveLocalState();
+      renderCartBar();
+      openCartModal();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    /* Customer Places Order (No Payment or Send-to-Kitchen Shown Here) */
+    async function submitOrder() {
+      const guestName = (document.getElementById("guestNameInput").value || "").trim();
+      if (!guestName) {
+        showToast("Order karne ke liye apna naam likhein");
+        document.getElementById("guestNameInput").focus();
+        return;
+      }
+
+      const extras = getSelectedExtrasList();
+      const combinedItems = [
+        ...state.cart.map(i => ({ ...i })),
+        ...extras
+      ];
+
+      if (!combinedItems.length) {
+        showToast("Pehle koi item ya extra water bottle chunein");
+        return;
+      }
+
+      const total = combinedItems.reduce((s, i) => s + i.qty * i.price, 0);
+      const order = {
+        id: "ORD-" + Date.now(),
+        tableCode,
+        tableLabel,
+        guestName,
+        note: (document.getElementById("guestNoteInput").value || "").trim(),
+        items: combinedItems,
+        baseTotal: total,
+        tipAmount: 0,
+        extraPayAmount: 0,
+        total,
+        paymentMethod: "Pending",
+        paymentStatus: "Unpaid",
+        status: "Order Received",
+        prepMinutes: 15,
+        kitchenSentAt: null,
+        tableReleased: false,
+        createdAt: Date.now()
+      };
+
+      state.orders.unshift(order);
+      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
+      state.cart = [];
+      selectedExtraIds = [];
+      document.getElementById("guestNameInput").value = "";
+      document.getElementById("guestNoteInput").value = "";
+
+      saveLocalState();
+      renderCartBar();
+      renderOrders();
+      closeModal("cartModal");
+      await pushOrderToFirebase(order);
+      showToast(`Order placed for ${guestName}!`);
+      openTab("myorders");
+    }
+
+    /* Staff Manual Order Entry for Any Table */
+    function renderStaffOrderForm() {
+      const box = document.getElementById("staffMenuPicker");
+      if (!box) return;
+      box.innerHTML = MENU_ITEMS.map(item => {
+        const q = staffQuantities[item.id] || 0;
+        return `
+          <div class="extra-row">
+            <div>
+              <strong style="font-size:13px;">${item.name}</strong>
+              <div style="font-size:11px; color:var(--accent-2);">₹${item.price}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button type="button" class="pill" onclick="changeStaffQty(${item.id}, -1)">−</button>
+              <strong style="min-width:18px; text-align:center;">${q}</strong>
+              <button type="button" class="pill accent" onclick="changeStaffQty(${item.id}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      updateStaffOrderPreview();
+    }
+
+    function changeStaffQty(id, delta) {
+      const next = Math.max(0, (staffQuantities[id] || 0) + delta);
+      staffQuantities[id] = next;
+      renderStaffOrderForm();
+    }
+
+    function updateStaffOrderPreview() {
+      let sum = 0;
+      MENU_ITEMS.forEach(item => {
+        sum += (staffQuantities[item.id] || 0) * item.price;
+      });
+      const extra = Math.max(0, Number(document.getElementById("staffExtraChargeInput")?.value || 0));
+      const el = document.getElementById("staffOrderTotalText");
+      if (el) el.textContent = `₹${sum + extra}`;
+    }
+
+    async function submitStaffManualOrder() {
+      const selTable = document.getElementById("staffTableSelect").value || "T01";
+      const gName = (document.getElementById("staffGuestNameInput").value || "").trim() || "Walk-in Guest";
+      const prepMins = Math.max(1, Number(document.getElementById("staffPrepMinsInput").value || 15));
+      const extraAmt = Math.max(0, Number(document.getElementById("staffExtraChargeInput").value || 0));
+
+      const items = [];
+      MENU_ITEMS.forEach(m => {
+        const q = staffQuantities[m.id] || 0;
+        if (q > 0) items.push({ id: m.id, name: m.name, price: m.price, qty: q });
+      });
+      if (extraAmt > 0) {
+        items.push({ name: "Extra Water / Add-on", price: extraAmt, qty: 1, isExtra: true });
+      }
+      if (!items.length) {
+        showToast("Kam se kam 1 item select karein");
+        return;
+      }
+
+      const total = items.reduce((s, i) => s + i.qty * i.price, 0);
+      const order = {
+        id: "ORD-" + Date.now(),
+        tableCode: selTable,
+        tableLabel: getTableLabel(selTable),
+        guestName: gName,
+        note: "Placed by Staff",
+        items,
+        baseTotal: total,
+        tipAmount: 0,
+        extraPayAmount: 0,
+        total,
+        paymentMethod: "Pending",
+        paymentStatus: "Unpaid",
+        status: "In Kitchen",
+        prepMinutes: prepMins,
+        kitchenSentAt: Date.now(),
+        tableReleased: false,
+        createdAt: Date.now()
+      };
+
+      state.orders.unshift(order);
+      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
+      staffQuantities = {};
+      document.getElementById("staffGuestNameInput").value = "";
+      document.getElementById("staffExtraChargeInput").value = "";
+      saveLocalState();
+      renderStaffOrderForm();
+      renderOrders();
+      await pushOrderToFirebase(order);
+      showToast(`${getTableLabel(selTable)} order sent to kitchen!`);
+      openTab("kds");
+    }
+
+    /* Staff Sends Order to Kitchen with Prep Time -> Customer Sees Live Countdown */
+    async function sendOrderToKitchenWithTime(orderId) {
+      const inp = document.getElementById(`prepInput-${orderId}`);
+      const mins = Math.max(1, Math.min(120, Number(inp ? inp.value : 15) || 15));
+      const now = Date.now();
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.status = "In Kitchen";
+        ord.prepMinutes = mins;
+        ord.kitchenSentAt = now;
+      }
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, {
+        status: "In Kitchen",
+        prepMinutes: mins,
+        kitchenSentAt: now
+      });
+      showToast(`Sent to Kitchen (${mins} min timer started)`);
+    }
+
+    /* Staff Marks Order as Served / Dinner Ready -> Customer Sees Dinner & Payment Option */
+    async function markOrderServedDinner(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.status = "Served / Dinner Ready";
+      }
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, { status: "Served / Dinner Ready" });
+      showToast("Marked Served / Dinner Ready!");
+    }
+
+    /* Customer Payment Flow (Tip + Extra Payment + Online/Offline) */
+    function openBillPayModal(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (!ord) return;
+      activeBillOrderId = orderId;
+      const base = Number(ord.baseTotal ?? ord.total ?? 0);
+      document.getElementById("billPayOrderDetails").innerHTML = `
+        <div><strong>${ord.tableLabel}</strong> • Guest: <strong>${ord.guestName || "Guest"}</strong></div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+          ${ord.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+        </div>
+      `;
+      document.getElementById("billTipInput").value = "0";
+      document.getElementById("billExtraPayInput").value = "0";
+      document.querySelectorAll(".tip-chip").forEach((c, idx) => c.classList.toggle("active", idx === 0));
+      document.getElementById("billBaseAmt").textContent = `₹${base}`;
+      recalcBillPayModal();
+      document.getElementById("billPayModal").classList.add("open");
+    }
+
+    function setBillTip(amt, btnEl) {
+      document.getElementById("billTipInput").value = String(amt);
+      document.querySelectorAll(".tip-chip").forEach(c => c.classList.remove("active"));
+      if (btnEl) btnEl.classList.add("active");
+      recalcBillPayModal();
+    }
+
+    function recalcBillPayModal() {
+      const ord = state.orders.find(o => o.id === activeBillOrderId);
+      if (!ord) return 0;
+      const base = Number(ord.baseTotal ?? ord.total ?? 0);
+      const tip = Math.max(0, Number(document.getElementById("billTipInput").value || 0));
+      const extraPay = Math.max(0, Number(document.getElementById("billExtraPayInput").value || 0));
+      const finalAmt = base + tip + extraPay;
+      document.getElementById("billBaseAmt").textContent = `₹${base}`;
+      document.getElementById("billTipExtraAmt").textContent = `₹${tip + extraPay}`;
+      document.getElementById("billFinalPayableAmt").textContent = `₹${finalAmt}`;
+      return finalAmt;
+    }
+
+    async function payBillOnlineScanner() {
+      const ord = state.orders.find(o => o.id === activeBillOrderId);
+      if (!ord) return;
+      const base = Number(ord.baseTotal ?? ord.total ?? 0);
+      const tip = Math.max(0, Number(document.getElementById("billTipInput").value || 0));
+      const extraPay = Math.max(0, Number(document.getElementById("billExtraPayInput").value || 0));
+      const finalAmt = base + tip + extraPay;
+
+      ord.tipAmount = tip;
+      ord.extraPayAmount = extraPay;
+      ord.total = finalAmt;
+      ord.paymentMethod = "Online Payment (Counter QR)";
+      saveLocalState();
+      renderOrders();
+      closeModal("billPayModal");
+
+      await updateOrderFirebase(ord.id, {
+        tipAmount: tip,
+        extraPayAmount: extraPay,
+        total: finalAmt,
+        paymentMethod: ord.paymentMethod
+      });
+      openCounterQrScanner(ord.id, finalAmt);
+    }
+
+    async function payBillOfflineCounter() {
+      const ord = state.orders.find(o => o.id === activeBillOrderId);
+      if (!ord) return;
+      const base = Number(ord.baseTotal ?? ord.total ?? 0);
+      const tip = Math.max(0, Number(document.getElementById("billTipInput").value || 0));
+      const extraPay = Math.max(0, Number(document.getElementById("billExtraPayInput").value || 0));
+      const finalAmt = base + tip + extraPay;
+
+      ord.tipAmount = tip;
+      ord.extraPayAmount = extraPay;
+      ord.total = finalAmt;
+      ord.paymentMethod = "Offline Payment (Cash / Counter)";
+      ord.paymentStatus = "Paid (Offline)";
+      ord.tableReleased = true;
+
+      saveLocalState();
+      renderOrders();
+      closeModal("billPayModal");
+
+      await updateOrderFirebase(ord.id, {
+        tipAmount: tip,
+        extraPayAmount: extraPay,
+        total: finalAmt,
+        paymentMethod: ord.paymentMethod,
+        paymentStatus: ord.paymentStatus,
+        tableReleased: true
+      });
+      showToast("Offline payment done! Table is now Khali (Free).");
+    }
+
+    async function markCustomerPaid(orderId) {
+      const ord = state.orders.find(o => o.id === orderId);
+      if (ord) {
+        ord.paymentStatus = "Paid (Online)";
+        ord.tableReleased = true;
+      }
+      saveLocalState();
+      renderOrders();
+      await updateOrderFirebase(orderId, { paymentStatus: "Paid (Online)", tableReleased: true });
+      showToast("Online payment completed! Table Khali.");
     }
 
     /* Live Camera Scanner for Counter QR Payment */
@@ -776,11 +1241,19 @@
     let scannerTargetOrderId = null;
     let scannerTargetAmount = 0;
 
+    function buildUpiUrl(amount, noteText) {
+      const upi = encodeURIComponent((state.upiId || "parksidecafe@upi").trim());
+      const pn = encodeURIComponent("Park Side Cafe");
+      const tn = encodeURIComponent(noteText || `${tableLabel} Bill`);
+      const am = encodeURIComponent(String(amount || 0));
+      return `upi://pay?pa=${upi}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+    }
+
     async function openCounterQrScanner(orderId, amount) {
       scannerTargetOrderId = orderId;
       scannerTargetAmount = Number(amount || 0);
       document.getElementById("scannerAmountBanner").textContent = `Amount to Pay: ₹${scannerTargetAmount}`;
-      document.getElementById("fallbackUpiBtn").href = buildUpiUrl(scannerTargetAmount, `${tableLabel} Payment`);
+      document.getElementById("fallbackUpiBtn").href = buildUpiUrl(scannerTargetAmount, `${tableLabel} Bill`);
       document.getElementById("scannerStatusText").textContent = "Camera khul raha hai — Counter QR ke saamne rakhein...";
       document.getElementById("scannerModal").classList.add("open");
 
@@ -868,166 +1341,12 @@
       scannerLoopId = requestAnimationFrame(scanFrameLoop);
     }
 
-    function openCartModal() {
-      const list = document.getElementById("cartItemsList");
-      if (!state.cart.length) {
-        list.innerHTML = `<p style="color:var(--muted); margin-bottom:10px;">Menu se item add karein ya neeche extra item/water chunein.</p>`;
-      } else {
-        list.innerHTML = state.cart.map(c => `
-          <div class="order-box" style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong>${c.name}</strong> × ${c.qty}
-              <div style="font-size:12px; color:var(--accent-2);">₹${c.price * c.qty}</div>
-            </div>
-            <button class="pill" onclick="changeQty(${c.id}, -1)">−</button>
-          </div>
-        `).join("");
-      }
-      renderExtraAddonsUI();
-      renderOrderBreakdown();
-      document.getElementById("cartModal").classList.add("open");
-    }
-
-    function changeQty(id, delta) {
-      const idx = state.cart.findIndex(c => c.id === id);
-      if (idx === -1) return;
-      state.cart[idx].qty += delta;
-      if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
-      saveLocalState();
-      renderCartBar();
-      openCartModal();
-    }
-
-    function clearCart() {
-      state.cart = [];
-      selectedExtraIds = [];
-      const cName = document.getElementById("customExtraNameInput");
-      const cPrice = document.getElementById("customExtraPriceInput");
-      if (cName) cName.value = "";
-      if (cPrice) cPrice.value = "";
-      saveLocalState();
-      renderCartBar();
-      openCartModal();
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.remove("open");
-    }
-
-    function openPostOrderPaymentModal(order) {
-      latestPlacedOrder = order;
-      document.getElementById("postOrderSummaryBox").innerHTML = `
-        <div><strong>${order.tableLabel}</strong> • Guest: <strong>${order.guestName}</strong></div>
-        <div style="font-size:12px; color:var(--muted); margin-top:4px;">
-          ${order.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
-        </div>
-        <div style="font-size:15px; font-weight:800; color:var(--accent-2); margin-top:6px;">
-          Total Payable: ₹${order.total}
-        </div>
-      `;
-      document.getElementById("postOrderPaymentModal").classList.add("open");
-    }
-
-    async function chooseOnlinePayment() {
-      const ord = latestPlacedOrder;
-      closeModal("postOrderPaymentModal");
-      if (ord) {
-        ord.paymentMethod = "Online Payment (Counter QR)";
-        saveLocalState();
-        renderOrders();
-        await updateOrderFirebase(ord.id, { paymentMethod: ord.paymentMethod });
-        openCounterQrScanner(ord.id, ord.total);
-      }
-    }
-
-    async function chooseOfflinePayment() {
-      const ord = latestPlacedOrder;
-      closeModal("postOrderPaymentModal");
-      if (ord) {
-        ord.paymentMethod = "Offline Payment (Cash / Counter)";
-        ord.paymentStatus = "Offline at Counter";
-        saveLocalState();
-        renderOrders();
-        await updateOrderFirebase(ord.id, {
-          paymentMethod: ord.paymentMethod,
-          paymentStatus: ord.paymentStatus
-        });
-        showToast("Offline payment selected. Pay at counter/table.");
-      }
-    }
-
-    async function submitOrder() {
-      const guestName = (document.getElementById("guestNameInput").value || "").trim();
-      if (!guestName) {
-        showToast("Please enter your name before ordering");
-        document.getElementById("guestNameInput").focus();
-        return;
-      }
-
-      const extras = getSelectedExtrasList();
-      const combinedItems = [
-        ...state.cart.map(i => ({ ...i })),
-        ...extras
-      ];
-
-      if (!combinedItems.length) {
-        showToast("Please select a menu item or extra item");
-        return;
-      }
-
-      const total = combinedItems.reduce((s, i) => s + i.qty * i.price, 0);
-      const order = {
-        id: "ORD-" + Date.now(),
-        tableCode,
-        tableLabel,
-        guestName,
-        note: (document.getElementById("guestNoteInput").value || "").trim(),
-        items: combinedItems,
-        extraTotal: getExtrasSubtotal(),
-        total,
-        paymentMethod: "Pending Selection",
-        paymentStatus: "Pending Payment",
-        status: "Order Placed",
-        tableReleased: false,
-        createdAt: Date.now()
-      };
-
-      state.orders.unshift(order);
-      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
-      state.cart = [];
-      selectedExtraIds = [];
-      document.getElementById("guestNameInput").value = "";
-      document.getElementById("guestNoteInput").value = "";
-      document.getElementById("customExtraNameInput").value = "";
-      document.getElementById("customExtraPriceInput").value = "";
-
-      saveLocalState();
-      renderCartBar();
-      renderOrders();
-      closeModal("cartModal");
-      await pushOrderToFirebase(order);
-      openTab("myorders");
-      openPostOrderPaymentModal(order);
-    }
-
-    async function markCustomerPaid(orderId) {
-      const ord = state.orders.find(o => o.id === orderId);
-      if (ord) {
-        ord.paymentStatus = "Paid by Guest";
-        ord.tableReleased = true;
-      }
-      saveLocalState();
-      renderOrders();
-      await updateOrderFirebase(orderId, { paymentStatus: "Paid by Guest", tableReleased: true });
-      showToast("Payment done! Table is now Khali (Free).");
-    }
-
     async function freeTableNow(code) {
       let changed = false;
       state.orders.forEach(o => {
         if ((o.tableCode || "T01") === code && !o.tableReleased) {
           o.tableReleased = true;
-          if (o.total > 0 && o.paymentStatus !== "Paid" && o.paymentStatus !== "Paid by Guest") {
+          if (o.total > 0 && !String(o.paymentStatus || "").startsWith("Paid")) {
             o.paymentStatus = "Paid";
           }
           changed = true;
@@ -1043,6 +1362,24 @@
         }
       }
       showToast(`${getTableLabel(code)} marked Khali (Free)`);
+    }
+
+    function getRemainingKitchenText(order) {
+      if (order.status === "Served / Dinner Ready") {
+        return `<span class="served-pill">🍽️ Dinner Served! Enjoy your meal</span>`;
+      }
+      if (order.status === "In Kitchen" && order.kitchenSentAt) {
+        const mins = Number(order.prepMinutes || 15);
+        const endAt = Number(order.kitchenSentAt) + mins * 60 * 1000;
+        const leftMs = Math.max(0, endAt - Date.now());
+        const m = Math.floor(leftMs / 60000);
+        const s = Math.floor((leftMs % 60000) / 1000);
+        const clock = leftMs > 0
+          ? `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")} min left`
+          : `Ready any moment!`;
+        return `<span class="timer-pill">👨‍🍳 In Kitchen • Time: ${clock}</span>`;
+      }
+      return `<span class="timer-pill">⏳ Order Received • Waiting for kitchen</span>`;
     }
 
     function renderTableStatusBoard() {
@@ -1080,32 +1417,40 @@
     }
 
     function renderOrders() {
-      const myOrders = state.orders.filter(o => o.tableCode === tableCode);
+      const myOrders = state.orders.filter(o => o.tableCode === tableCode && o.status !== "Waiter Requested");
       const myEl = document.getElementById("myOrdersList");
       myEl.innerHTML = myOrders.length ? myOrders.map(o => {
-        const isPaid = o.paymentStatus === "Paid" || o.paymentStatus === "Paid by Guest" || o.tableReleased;
+        const isPaid = String(o.paymentStatus || "").startsWith("Paid") || o.tableReleased;
+        const isServed = o.status === "Served / Dinner Ready";
         return `
           <div class="order-box">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-              <strong>${o.tableLabel} • ${o.guestName || "Guest"}</strong>
-              <span style="color:var(--accent-2); font-weight:700;">${o.status}</span>
+              <strong>${o.tableLabel} • Guest: ${o.guestName || "Guest"}</strong>
+              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${isPaid ? "✅ Paid" : "Unpaid"}</span>
+            </div>
+            <div class="kitchen-tracker">
+              <div style="font-size:12px; color:var(--muted);">Live Order Progress:</div>
+              <div>${getRemainingKitchenText(o)}</div>
+              ${!isServed ? `
+                <div style="margin-top:8px;">
+                  <button class="pill" onclick="openTab('game')">🎮 Play Mini Game While Waiting</button>
+                </div>
+              ` : ""}
             </div>
             <div style="font-size:13px; color:var(--muted); margin:6px 0;">
               ${o.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-              <strong>Total: ₹${o.total}</strong>
-              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${isPaid ? "Paid • Table Free" : (o.paymentStatus || "Pending Payment")}</span>
+              <strong>Bill Total: ₹${o.total}</strong>
+              ${!isPaid ? `
+                <button class="btn ok" onclick="openBillPayModal('${o.id}')">
+                  ${isServed ? "💳 Pay My Bill Now" : "💳 Pay Bill (Tip / Online / Offline)"}
+                </button>
+              ` : `<span style="font-size:12px; color:var(--ok); font-weight:700;">${o.paymentMethod || "Paid"}</span>`}
             </div>
-            ${!isPaid && o.total > 0 ? `
-              <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-                <button class="btn ok" onclick="openCounterQrScanner('${o.id}', ${o.total})">📷 Online Payment (Scan QR)</button>
-                <button class="btn primary" onclick="markCustomerPaid('${o.id}')">💵 Offline / Paid Done</button>
-              </div>
-            ` : ""}
           </div>
         `;
-      }).join("") : `<p style="color:var(--muted);">No orders placed for ${tableLabel} yet.</p>`;
+      }).join("") : `<p style="color:var(--muted);">Abhi ${tableLabel} ka koi bill nahi hai. Menu se order karein!</p>`;
 
       const { freeCount, busyCount } = renderTableStatusBoard();
       const staffEl = document.getElementById("staffOrdersList");
@@ -1114,24 +1459,27 @@
         `Khali: ${freeCount} • Booked: ${busyCount} • Orders: ${state.orders.length} • Revenue: ₹${totalRev}`;
 
       staffEl.innerHTML = state.orders.length ? state.orders.map(o => {
-        const isPaid = o.paymentStatus === "Paid" || o.paymentStatus === "Paid by Guest";
+        const isPaid = String(o.paymentStatus || "").startsWith("Paid");
         const isFree = Boolean(o.tableReleased);
         return `
           <div class="order-box">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
               <strong>${o.tableLabel} (${o.guestName || "Guest"}) • ₹${o.total}</strong>
-              <span style="color:var(--ok); font-weight:700;">${o.status}</span>
+              <span style="color:var(--accent-2); font-weight:700;">${o.status}</span>
             </div>
             <div style="font-size:12px; margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
-              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${o.paymentStatus || "Pending Payment"} • ${o.paymentMethod || "Pending"}</span>
+              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${o.paymentStatus || "Unpaid"} • ${o.paymentMethod || "Pending"}</span>
               <span class="${isFree ? "badge-pay" : "badge-unpaid"}">${isFree ? "🟢 Table Khali" : "🔴 Table Booked"}</span>
             </div>
             <div style="font-size:13px; color:var(--muted); margin:6px 0;">
               ${o.items.map(i => `${i.name} × ${i.qty}`).join(", ")}
+              ${o.tipAmount ? ` • Tip: ₹${o.tipAmount}` : ""}
+              ${o.extraPayAmount ? ` • Extra Pay: ₹${o.extraPayAmount}` : ""}
             </div>
-            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-              <button class="btn ok" onclick="setStatus('${o.id}', 'In Kitchen')">🍳 Preparing</button>
-              <button class="btn primary" onclick="setStatus('${o.id}', 'Served')">🍽️ Served</button>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center;">
+              <input id="prepInput-${o.id}" type="number" min="1" max="120" value="${o.prepMinutes || 15}" style="width:74px; margin:0; padding:7px 8px;" title="Prep minutes" />
+              <button class="btn info" onclick="sendOrderToKitchenWithTime('${o.id}')">🍳 Send to Kitchen (Min)</button>
+              <button class="btn ok" onclick="markOrderServedDinner('${o.id}')">🍽️ Served (Dinner)</button>
               <button class="btn" onclick="setPaymentStatus('${o.id}', 'Paid')">💰 Mark Paid & Free Table</button>
             </div>
           </div>
@@ -1139,116 +1487,120 @@
       }).join("") : `<p style="color:var(--muted);">No live orders yet.</p>`;
     }
 
-    async function setStatus(orderId, status) {
-      const ord = state.orders.find(o => o.id === orderId);
-      if (ord) ord.status = status;
-      saveLocalState();
-      renderOrders();
-      await updateOrderFirebase(orderId, { status });
-      showToast(`Status: ${status}`);
-    }
-
     async function setPaymentStatus(orderId, paymentStatus) {
       const ord = state.orders.find(o => o.id === orderId);
       if (ord) {
         ord.paymentStatus = paymentStatus;
-        if (paymentStatus === "Paid" || paymentStatus === "Paid by Guest") {
-          ord.tableReleased = true;
-        }
+        ord.tableReleased = true;
       }
       saveLocalState();
       renderOrders();
       await updateOrderFirebase(orderId, { paymentStatus, tableReleased: true });
-      showToast("Payment Paid & Table Khali!");
+      showToast("Paid & Table Khali!");
     }
 
-    function csvCell(val) {
-      const str = String(val ?? "").replace(/"/g, '""');
-      return `"${str}"`;
-    }
-
-    function downloadCsvReport() {
-      const rows = [
-        ["Order ID", "Date & Time", "Table", "Table Status", "Guest Name", "Items", "Note", "Payment Method", "Payment Status", "Total (INR)", "Status"]
-      ];
-      state.orders.forEach(o => {
-        const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
-        const itemsText = Array.isArray(o.items)
-          ? o.items.map(i => `${i.name} x${i.qty}`).join(" | ")
-          : "";
-        rows.push([
-          o.id || "",
-          dt,
-          o.tableLabel || o.tableCode || "",
-          o.tableReleased ? "Khali (Free)" : "Booked",
-          o.guestName || "Guest",
-          itemsText,
-          o.note || "",
-          o.paymentMethod || "Pending",
-          o.paymentStatus || "Pending Payment",
-          o.total || 0,
-          o.status || ""
-        ]);
+    /* Excel (.xlsx) Report Export: Daily / Weekly / Monthly / Yearly */
+    function filterOrdersByPeriod(period) {
+      const now = new Date();
+      return state.orders.filter(o => {
+        if (!o.createdAt) return period === "all";
+        const d = new Date(o.createdAt);
+        if (period === "daily") {
+          return d.toDateString() === now.toDateString();
+        }
+        if (period === "weekly") {
+          return (now.getTime() - d.getTime()) <= 7 * 24 * 60 * 60 * 1000;
+        }
+        if (period === "monthly") {
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+        if (period === "yearly") {
+          return d.getFullYear() === now.getFullYear();
+        }
+        return true;
       });
-      const totalRev = state.orders.reduce((s, o) => s + (o.total || 0), 0);
-      rows.push(["", "", "", "", "", "", "", "", "TOTAL REVENUE", totalRev, ""]);
+    }
 
-      const csvText = rows.map(r => r.map(csvCell).join(",")).join("\n");
-      const blob = new Blob(["\uFEFF" + csvText], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+    function downloadExcelReport() {
+      const period = document.getElementById("reportPeriodSelect")?.value || "daily";
+      const filtered = filterOrdersByPeriod(period);
+      const rows = filtered.map(o => ({
+        "Order ID": o.id || "",
+        "Date & Time": o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "",
+        "Table": o.tableLabel || o.tableCode || "",
+        "Table Status": o.tableReleased ? "Khali (Free)" : "Booked",
+        "Customer Name": o.guestName || "Guest",
+        "Items": Array.isArray(o.items) ? o.items.map(i => `${i.name} x${i.qty}`).join(" | ") : "",
+        "Base Bill (INR)": Number(o.baseTotal ?? o.total ?? 0),
+        "Tip (INR)": Number(o.tipAmount || 0),
+        "Extra Payment (INR)": Number(o.extraPayAmount || 0),
+        "Grand Total (INR)": Number(o.total || 0),
+        "Kitchen Status": o.status || "",
+        "Payment Method": o.paymentMethod || "Pending",
+        "Payment Status": o.paymentStatus || "Unpaid"
+      }));
+
+      const totalRev = filtered.reduce((s, o) => s + Number(o.total || 0), 0);
+      rows.push({
+        "Order ID": "TOTAL",
+        "Date & Time": `${filtered.length} Orders`,
+        "Table": "",
+        "Table Status": "",
+        "Customer Name": "",
+        "Items": "",
+        "Base Bill (INR)": "",
+        "Tip (INR)": "",
+        "Extra Payment (INR)": "",
+        "Grand Total (INR)": totalRev,
+        "Kitchen Status": "",
+        "Payment Method": "",
+        "Payment Status": ""
+      });
+
       const stamp = new Date().toISOString().slice(0, 10);
-      a.href = url;
-      a.download = `Park-Side-Cafe-Report-${stamp}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast("CSV Report downloaded");
+      if (typeof XLSX !== "undefined") {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `${period.toUpperCase()}_Report`);
+        XLSX.writeFile(wb, `Park-Side-Cafe-${period}-Report-${stamp}.xlsx`);
+        showToast(`Excel (${period}) report downloaded!`);
+      } else {
+        showToast("Excel library loading, try again in 2 seconds");
+      }
     }
 
     function printSalesReport() {
-      const totalRev = state.orders.reduce((s, o) => s + (o.total || 0), 0);
+      const period = document.getElementById("reportPeriodSelect")?.value || "daily";
+      const filtered = filterOrdersByPeriod(period);
+      const totalRev = filtered.reduce((s, o) => s + (o.total || 0), 0);
       const win = window.open("", "_blank");
-      if (!win) {
-        window.print();
-        return;
-      }
-      const rowsHtml = state.orders.map(o => {
+      if (!win) { window.print(); return; }
+      const rowsHtml = filtered.map(o => {
         const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
-        const itemsText = Array.isArray(o.items)
-          ? o.items.map(i => `${i.name} × ${i.qty}`).join(", ")
-          : "";
+        const itemsText = Array.isArray(o.items) ? o.items.map(i => `${i.name} × ${i.qty}`).join(", ") : "";
         return `<tr>
-          <td>${o.id || ""}</td>
-          <td>${dt}</td>
-          <td>${o.tableLabel || ""}</td>
-          <td>${o.tableReleased ? "Khali" : "Booked"}</td>
-          <td>${o.guestName || "Guest"}</td>
-          <td>${itemsText}</td>
-          <td>${o.paymentStatus || "Pending"}</td>
-          <td>${o.status || ""}</td>
+          <td>${o.id || ""}</td><td>${dt}</td><td>${o.tableLabel || ""}</td>
+          <td>${o.guestName || "Guest"}</td><td>${itemsText}</td>
+          <td>${o.paymentStatus || "Unpaid"}</td><td>${o.status || ""}</td>
           <td style="text-align:right;">₹${o.total || 0}</td>
         </tr>`;
       }).join("");
 
       win.document.write(`
-        <html><head><title>Park Side Cafe — Sales Report</title>
+        <html><head><title>Park Side Cafe — ${period.toUpperCase()} Report</title>
         <style>
           body { font-family: system-ui, sans-serif; padding: 20px; color: #111; }
-          h2 { margin-bottom: 4px; }
-          p { color: #555; margin-bottom: 14px; }
-          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
           th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
           th { background: #f3f4f6; }
         </style></head><body>
-          <h2>Park Side Cafe — Orders & Sales Report</h2>
-          <p>Total Orders: ${state.orders.length} • Total Revenue: ₹${totalRev}</p>
+          <h2>Park Side Cafe — ${period.toUpperCase()} Sales Report</h2>
+          <p>Orders: ${filtered.length} • Total Revenue: ₹${totalRev}</p>
           <table>
             <thead><tr>
-              <th>Order ID</th><th>Time</th><th>Table</th><th>Seat Status</th><th>Guest</th><th>Items</th><th>Payment</th><th>Status</th><th>Amount</th>
+              <th>Order ID</th><th>Time</th><th>Table</th><th>Guest</th><th>Items</th><th>Payment</th><th>Status</th><th>Amount</th>
             </tr></thead>
-            <tbody>${rowsHtml || '<tr><td colspan="9">No orders recorded yet.</td></tr>'}</tbody>
+            <tbody>${rowsHtml || '<tr><td colspan="8">No orders in this period.</td></tr>'}</tbody>
           </table>
           <script>window.print();<\/script>
         </body></html>
@@ -1419,6 +1771,11 @@
     renderMenu();
     renderCartBar();
     renderOrders();
+    setInterval(() => {
+      if (document.getElementById("tab-myorders").style.display !== "none") {
+        renderOrders();
+      }
+    }, 1000);
     if (cleanDbUrl()) {
       syncFromFirebase();
       setInterval(syncFromFirebase, 6000);
