@@ -24,7 +24,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 95px; }
 
-    /* Customer Welcome Overlay */
     .welcome-screen {
       position: fixed; inset: 0; z-index: 999;
       background: radial-gradient(circle at top, #272217 0%, #0f1115 70%);
@@ -49,7 +48,6 @@
       color: #111; font-size: 16px; font-weight: 800; cursor: pointer;
     }
 
-    /* Top 5-Second Live Order Popup Banner for Staff */
     .staff-top-popup {
       position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
       z-index: 250; width: calc(100% - 24px); max-width: 540px;
@@ -82,16 +80,13 @@
     .pill.accent { background: var(--accent); color: #111; border: 0; font-weight: 700; }
     .pill.ok { background: var(--ok); color: #052016; border: 0; font-weight: 700; }
 
-    /* New Order Counter Badge for Staff (1, 2, 3, 4, 5...) */
     .order-alert-chip {
       background: rgba(239, 68, 68, 0.18); color: #fca5a5;
       border: 1px solid rgba(239, 68, 68, 0.55);
       padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800;
       cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
     }
-    .order-alert-chip.has-new {
-      background: #ef4444; color: #fff; border-color: #fecaca;
-    }
+    .order-alert-chip.has-new { background: #ef4444; color: #fff; border-color: #fecaca; }
 
     .container { max-width: 1080px; margin: 0 auto; padding: 16px; }
     .banner {
@@ -101,7 +96,6 @@
       display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
 
-    /* Money Summary Cards (Cash vs Online vs Unpaid vs Total) */
     .money-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 10px; margin-bottom: 16px;
@@ -139,7 +133,6 @@
     .btn.info { background: var(--info); color: #072233; border: 0; }
     .btn.warn { background: var(--warn); color: #fff; border: 0; }
 
-    /* Extra / Add-ons */
     .extra-row {
       display: flex; justify-content: space-between; align-items: center; gap: 10px;
       background: var(--card-2); border: 1px solid var(--border); border-radius: 12px;
@@ -152,7 +145,6 @@
       width: auto; margin: 0; accent-color: var(--accent); transform: scale(1.15);
     }
 
-    /* Live Kitchen Timer Banner for Customer */
     .kitchen-tracker {
       background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(56, 189, 248, 0.08));
       border: 1px solid rgba(16, 185, 129, 0.35);
@@ -169,7 +161,6 @@
       font-size: 12px; font-weight: 800; margin-top: 6px;
     }
 
-    /* Mini Waiting Game (CUSTOMER ONLY) */
     .game-box {
       background: var(--card); border: 1px solid rgba(245, 158, 11, 0.35);
       border-radius: 18px; padding: 16px; text-align: center;
@@ -179,13 +170,9 @@
       border: 1px dashed rgba(255,255,255,0.2); border-radius: 14px;
       margin: 12px 0; overflow: hidden; user-select: none;
     }
-    .game-target {
-      position: absolute; font-size: 30px; cursor: pointer;
-      transition: transform 0.08s ease;
-    }
+    .game-target { position: absolute; font-size: 30px; cursor: pointer; transition: transform 0.08s ease; }
     .game-target:active { transform: scale(1.25); }
 
-    /* Staff Table Master Board (Shows Booked/Khali, People Count, Guest Names, Items, Paid/Unpaid, Quick Settle) */
     .table-board {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 10px;
       margin-bottom: 16px;
@@ -240,7 +227,6 @@
     }
     .tip-chip.active { background: var(--accent); color: #111; border-color: var(--accent); }
 
-    /* Camera Scanner View */
     .scanner-viewport {
       position: relative; width: 100%; border-radius: 14px; overflow: hidden;
       background: #000; border: 2px solid var(--accent); margin: 10px 0;
@@ -274,7 +260,6 @@
 </head>
 <body>
 
-  <!-- 5-Second Live Order Popup Notification for Staff -->
   <div id="staffTopPopup" class="staff-top-popup">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
       <div>
@@ -285,7 +270,6 @@
     </div>
   </div>
 
-  <!-- Customer Welcome Banner -->
   <div id="welcomeScreen" class="welcome-screen">
     <div class="welcome-card">
       <div id="welcomeTableBadge" class="welcome-badge">Table 01</div>
@@ -335,17 +319,14 @@
       <button class="tab-btn hidden-guest staff-only" data-tab="settings" onclick="openTab('settings')">⚙️ PINs & Database</button>
     </div>
 
-    <!-- CUSTOMER MENU TAB -->
     <div id="tab-menu">
       <div id="menuGrid" class="grid"></div>
     </div>
 
-    <!-- CUSTOMER MY BILL & LIVE KITCHEN STATUS TAB (ONLY THIS TABLE'S ORDERS) -->
     <div id="tab-myorders" style="display:none;">
       <div id="myOrdersList"></div>
     </div>
 
-    <!-- CUSTOMER MINI GAME TAB (CUSTOMER ONLY — REMOVED FROM STAFF) -->
     <div id="tab-game" style="display:none;">
       <div class="game-box">
         <h3 style="margin-bottom:4px;">☕ Catch the Coffee & Snacks!</h3>
@@ -363,7 +344,6 @@
       </div>
     </div>
 
-    <!-- STAFF ALL TABLES, ORDERS, CASH/ONLINE MONEY & EXCEL REPORTS TAB -->
     <div id="tab-kds" style="display:none;">
       <div class="banner">
         <div>
@@ -384,7 +364,6 @@
         </div>
       </div>
 
-      <!-- Cash vs Online vs Unpaid vs Total Revenue Summary -->
       <div class="money-grid">
         <div class="money-card">
           <div class="money-label">💵 Cash Paid</div>
@@ -404,7 +383,6 @@
         </div>
       </div>
 
-      <!-- Complete Table Overview: Booked/Khali, Kitne Aadmi, Naam, Orders, Paid/Unpaid, Quick Settle -->
       <div class="card" style="margin-bottom:14px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
           <strong>🪑 Table 01–16 & Counter Live Overview (Booked / Khali / Guests / Bill)</strong>
@@ -419,7 +397,6 @@
       <div id="staffOrdersList"></div>
     </div>
 
-    <!-- STAFF / OWNER MANUAL ORDER FOR ANY TABLE TAB -->
     <div id="tab-stafforder" style="display:none;">
       <div class="card" style="max-width:650px;">
         <h3 style="margin-bottom:8px;">➕ Staff / Owner — Place Order for Any Table</h3>
@@ -467,7 +444,6 @@
       </div>
     </div>
 
-    <!-- STAFF QR GENERATOR & DOWNLOAD TAB -->
     <div id="tab-qrs" style="display:none;">
       <div class="card" style="margin-bottom:12px;">
         <label style="font-size:13px; font-weight:700;">🌐 Live Website URL</label>
@@ -480,7 +456,6 @@
       <div id="qrGrid" class="qr-grid"></div>
     </div>
 
-    <!-- STAFF SETTINGS TAB -->
     <div id="tab-settings" style="display:none;">
       <div class="card" style="max-width:520px;">
         <h3 style="margin-bottom:8px;">⚙️ PINs, UPI Fallback & Firebase Database</h3>
@@ -497,7 +472,6 @@
     </div>
   </div>
 
-  <!-- CART BAR (CUSTOMER ONLY — HIDDEN IN STAFF MODE) -->
   <div id="cartBar" class="cart-bar">
     <div>
       <div id="cartSummary" style="font-size:14px; font-weight:800;">0 items • ₹0</div>
@@ -506,7 +480,6 @@
     <button class="btn primary" onclick="openCartModal()">🛒 Review & Order</button>
   </div>
 
-  <!-- CUSTOMER ORDER MODAL (ONLY NAME + OPTIONAL EXTRA ITEMS + ORDER BUTTON) -->
   <div id="cartModal" class="modal-bg">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -547,7 +520,6 @@
     </div>
   </div>
 
-  <!-- CUSTOMER BILL & PAYMENT MODAL -->
   <div id="billPayModal" class="modal-bg" style="z-index: 95;">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -590,7 +562,6 @@
     </div>
   </div>
 
-  <!-- STAFF SETTLE PAYMENT MODAL (SINGLE ORDER OR FULL TABLE -> AUTOMATICALLY FREES TABLE) -->
   <div id="staffSettleModal" class="modal-bg" style="z-index: 96;">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -617,7 +588,6 @@
     </div>
   </div>
 
-  <!-- COUNTER QR CAMERA SCANNER MODAL -->
   <div id="scannerModal" class="modal-bg" style="z-index: 100;">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -642,7 +612,6 @@
     </div>
   </div>
 
-  <!-- STAFF PIN MODAL -->
   <div id="pinModal" class="modal-bg">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -672,7 +641,7 @@
       { id: "cold_drink", name: "Chilled Soft Drink Can", price: 40 }
     ];
 
-    const STORAGE_KEY = "parkside_cafe_state_v4";
+    const STORAGE_KEY = "parkside_cafe_state_v7";
     const params = new URLSearchParams(window.location.search);
     const isStaffMode = params.get("mode") === "staff" || params.get("mode") === "owner";
 
@@ -701,7 +670,7 @@
       upiId: "parksidecafe@upi",
       firebaseUrl: "",
       soundEnabled: true,
-      knownOrderIds: [],
+      seenOrderIds: [],
       unseenOrderIds: [],
       staffUnlocked: isStaffMode,
       cart: [],
@@ -711,8 +680,9 @@
     let selectedExtraIds = [];
     let staffQuantities = {};
     let activeBillOrderId = null;
-    let activeStaffSettleTarget = null; // { type: 'order', id } or { type: 'table', code }
+    let activeTableManageCode = null;
     let popupHideTimer = null;
+    let hasCompletedInitialSync = false;
     let gameScore = 0;
     let gameBest = Number(localStorage.getItem("parkside_game_best") || 0);
 
@@ -725,7 +695,7 @@
             ...state,
             ...parsed,
             soundEnabled: parsed.soundEnabled !== undefined ? Boolean(parsed.soundEnabled) : true,
-            knownOrderIds: Array.isArray(parsed.knownOrderIds) ? parsed.knownOrderIds : [],
+            seenOrderIds: Array.isArray(parsed.seenOrderIds) ? parsed.seenOrderIds : [],
             unseenOrderIds: Array.isArray(parsed.unseenOrderIds) ? parsed.unseenOrderIds : [],
             staffUnlocked: isStaffMode ? true : Boolean(parsed.staffUnlocked)
           };
@@ -741,7 +711,7 @@
           upiId: state.upiId,
           firebaseUrl: state.firebaseUrl,
           soundEnabled: state.soundEnabled,
-          knownOrderIds: state.knownOrderIds,
+          seenOrderIds: state.seenOrderIds,
           unseenOrderIds: state.unseenOrderIds,
           staffUnlocked: state.staffUnlocked,
           cart: state.cart,
@@ -765,6 +735,22 @@
       chip.classList.toggle("has-new", cnt > 0);
     }
 
+    function triggerSystemBrowserNotification(titleText, bodyText) {
+      try {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(titleText, { body: bodyText });
+        }
+      } catch (e) {}
+    }
+
+    function requestBrowserNotificationPermission() {
+      try {
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission().catch(() => {});
+        }
+      } catch (e) {}
+    }
+
     function showStaffTopPopup(newOrders) {
       if (!isStaffMode || !newOrders.length) return;
       const pop = document.getElementById("staffTopPopup");
@@ -772,17 +758,24 @@
       const bodyEl = document.getElementById("popupBody");
       const totalUnseen = state.unseenOrderIds.length;
 
+      let titleStr = "";
+      let bodyStr = "";
+
       if (newOrders.length === 1) {
         const o = newOrders[0];
-        titleEl.textContent = `🔔 ${formatOrderCountText(totalUnseen)} • ${o.tableLabel}`;
-        bodyEl.textContent = `Customer: ${o.guestName || "Guest"} • ₹${o.total || 0}`;
+        titleStr = `🔔 ${formatOrderCountText(totalUnseen)} • ${o.tableLabel}`;
+        bodyStr = `Customer: ${o.guestName || "Guest"} • ₹${o.total || 0}`;
       } else {
         const tables = Array.from(new Set(newOrders.map(o => o.tableLabel))).join(", ");
-        titleEl.textContent = `🔔 ${newOrders.length} New Orders! (Total Unseen: ${totalUnseen})`;
-        bodyEl.textContent = `Tables: ${tables}`;
+        titleStr = `🔔 ${newOrders.length} New Orders! (Total: ${totalUnseen})`;
+        bodyStr = `Tables: ${tables}`;
       }
 
+      titleEl.textContent = titleStr;
+      bodyEl.textContent = bodyStr;
       pop.classList.add("show");
+      triggerSystemBrowserNotification(titleStr, bodyStr);
+
       clearTimeout(popupHideTimer);
       popupHideTimer = setTimeout(() => {
         pop.classList.remove("show");
@@ -796,40 +789,72 @@
 
     function acknowledgeIncomingOrders() {
       state.unseenOrderIds = [];
+      state.seenOrderIds = Array.from(new Set([
+        ...state.seenOrderIds,
+        ...state.orders.filter(o => o && o.id).map(o => o.id)
+      ]));
       saveLocalState();
       updateNewOrderCounterUI();
       hideStaffTopPopup();
       openTab("kds");
     }
 
-    /* 5-Second Ring Alert for Staff when new order arrives */
-    function playFiveSecondRing(force = false) {
-      if (!force && (!isStaffMode || !state.soundEnabled)) return;
+    let audioCtxInstance = null;
+    function ensureAudioContext() {
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioCtx();
-        const bursts = force ? 1 : 5; // 5 bursts over ~5 seconds for live orders
-        for (let b = 0; b < bursts; b++) {
-          const offset = b * 0.95;
-          [784, 987.77, 1174.66].forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = "triangle";
-            osc.frequency.value = freq;
-            const start = ctx.currentTime + offset + idx * 0.12;
-            gain.gain.setValueAtTime(0.001, start);
-            gain.gain.exponentialRampToValueAtTime(0.24, start + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + 0.34);
-          });
+        if (!audioCtxInstance && AudioCtx) {
+          audioCtxInstance = new AudioCtx();
+        }
+        if (audioCtxInstance && audioCtxInstance.state === "suspended") {
+          audioCtxInstance.resume().catch(() => {});
         }
       } catch (e) {}
     }
 
+    let ringRepeatTimer = null;
+    function playSingleToneNow() {
+      try {
+        ensureAudioContext();
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = audioCtxInstance || new AudioCtx();
+        [784, 987.77, 1174.66].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.value = freq;
+          const start = ctx.currentTime + idx * 0.12;
+          gain.gain.setValueAtTime(0.001, start);
+          gain.gain.exponentialRampToValueAtTime(0.28, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.34);
+        });
+      } catch (e) {}
+    }
+
+    function playFiveSecondRing(force = false) {
+      if (!force && (!isStaffMode || !state.soundEnabled)) return;
+      clearInterval(ringRepeatTimer);
+      playSingleToneNow();
+      if (force) return;
+      let count = 1;
+      ringRepeatTimer = setInterval(() => {
+        count += 1;
+        if (!state.soundEnabled || count > 5) {
+          clearInterval(ringRepeatTimer);
+          ringRepeatTimer = null;
+          return;
+        }
+        playSingleToneNow();
+      }, 950);
+    }
+
     function toggleSoundAlert() {
+      ensureAudioContext();
+      requestBrowserNotificationPermission();
       state.soundEnabled = !state.soundEnabled;
       saveLocalState();
       updateSoundButton();
@@ -842,32 +867,35 @@
       if (btn) btn.textContent = state.soundEnabled ? "🔊 Ring: ON" : "🔇 Ring: OFF";
     }
 
-    function handleIncomingOrders(list) {
-      const validOrders = list.filter(o => o && o.id);
-      if (!state.knownOrderIds.length && validOrders.length) {
-        state.knownOrderIds = validOrders.map(o => o.id);
-        const recentUnpaid = validOrders.filter(o => o.status === "Order Received" && !String(o.paymentStatus || "").startsWith("Paid"));
-        if (recentUnpaid.length) {
-          state.unseenOrderIds = recentUnpaid.map(o => o.id);
+    function processOrdersForAlerts(list) {
+      const validOrders = list.filter(o => o && o.id && o.status !== "Waiter Requested");
+      const activeUnpaid = validOrders.filter(o =>
+        !o.tableReleased && !String(o.paymentStatus || "").toLowerCase().startsWith("paid")
+      );
+
+      if (!hasCompletedInitialSync) {
+        hasCompletedInitialSync = true;
+        const unseenExisting = activeUnpaid.filter(o => !state.seenOrderIds.includes(o.id));
+        if (unseenExisting.length) {
+          state.unseenOrderIds = Array.from(new Set([...state.unseenOrderIds, ...unseenExisting.map(o => o.id)]));
           updateNewOrderCounterUI();
           if (isStaffMode) {
             playFiveSecondRing(false);
-            showStaffTopPopup(recentUnpaid);
+            showStaffTopPopup(unseenExisting);
           }
         }
         saveLocalState();
         return;
       }
 
-      const newlyArrived = validOrders.filter(o => !state.knownOrderIds.includes(o.id));
-      if (newlyArrived.length) {
-        state.knownOrderIds = Array.from(new Set([...state.knownOrderIds, ...newlyArrived.map(o => o.id)]));
-        state.unseenOrderIds = Array.from(new Set([...state.unseenOrderIds, ...newlyArrived.map(o => o.id)]));
+      const brandNew = validOrders.filter(o => !state.seenOrderIds.includes(o.id));
+      if (brandNew.length) {
+        state.unseenOrderIds = Array.from(new Set([...state.unseenOrderIds, ...brandNew.map(o => o.id)]));
         saveLocalState();
         updateNewOrderCounterUI();
         if (isStaffMode) {
           playFiveSecondRing(false);
-          showStaffTopPopup(newlyArrived);
+          showStaffTopPopup(brandNew);
         }
       }
     }
@@ -904,13 +932,13 @@
       const base = cleanDbUrl();
       if (!base) return;
       try {
-        const res = await fetch(`${base}/parksidecafe/orders.json`);
+        const res = await fetch(`${base}/parksidecafe/orders.json?t=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         if (data && typeof data === "object") {
           const list = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           state.orders = list;
-          handleIncomingOrders(list);
+          processOrdersForAlerts(list);
           saveLocalState();
           renderOrders();
         }
@@ -926,12 +954,12 @@
     }
 
     function enterGuestMenu() {
-      document.getElementById("welcomeScreen").classList.add("hidden");
+      const el = document.getElementById("welcomeScreen");
+      if (el) el.classList.add("hidden");
     }
 
     function applyAccessUI() {
       if (isStaffMode) {
-        // Staff / Owner view: NO Table 01 on left, NO Game tab/section
         document.title = "Park Side Cafe — Staff & Owner Live";
         document.getElementById("headerSub").textContent = "Staff & Owner Live Control";
         document.getElementById("welcomeScreen").classList.add("hidden");
@@ -988,7 +1016,6 @@
       }
     }
 
-    /* Mini Waiting Game (Customer Only) */
     function hitGameTarget() {
       const icons = ["☕", "🥪", "🍟", "🧁", "🥤"];
       gameScore += 1;
@@ -1137,7 +1164,6 @@
       document.getElementById(id).classList.remove("open");
     }
 
-    /* Customer Places Order: Name required, Extra items completely optional */
     async function submitOrder() {
       const guestName = (document.getElementById("guestNameInput").value || "").trim();
       if (!guestName) {
@@ -1180,7 +1206,7 @@
       };
 
       state.orders.unshift(order);
-      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
+      state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, order.id]));
       state.cart = [];
       selectedExtraIds = [];
       document.getElementById("guestNameInput").value = "";
@@ -1194,7 +1220,6 @@
       openTab("myorders");
     }
 
-    /* Staff Manual Order Entry for Any Table */
     function renderStaffOrderForm() {
       const box = document.getElementById("staffMenuPicker");
       if (!box) return;
@@ -1275,7 +1300,7 @@
       };
 
       state.orders.unshift(order);
-      state.knownOrderIds = Array.from(new Set([order.id, ...state.knownOrderIds]));
+      state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, order.id]));
       staffQuantities = {};
       document.getElementById("staffGuestNameInput").value = "";
       document.getElementById("staffExtraChargeInput").value = "";
@@ -1287,7 +1312,6 @@
       openTab("kds");
     }
 
-    /* Staff Sends Order to Kitchen with Prep Time */
     async function sendOrderToKitchenWithTime(orderId) {
       const inp = document.getElementById(`prepInput-${orderId}`);
       const mins = Math.max(1, Math.min(120, Number(inp ? inp.value : 15) || 15));
@@ -1299,6 +1323,7 @@
         ord.kitchenSentAt = now;
       }
       state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== orderId);
+      state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, orderId]));
       saveLocalState();
       updateNewOrderCounterUI();
       renderOrders();
@@ -1310,13 +1335,13 @@
       showToast(`Sent to Kitchen (${mins} min timer started)`);
     }
 
-    /* Staff Marks Order as Served / Dinner Ready */
     async function markOrderServedDinner(orderId) {
       const ord = state.orders.find(o => o.id === orderId);
       if (ord) {
         ord.status = "Served / Dinner Ready";
       }
       state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== orderId);
+      state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, orderId]));
       saveLocalState();
       updateNewOrderCounterUI();
       renderOrders();
@@ -1324,20 +1349,101 @@
       showToast("Marked Served / Dinner Ready!");
     }
 
-    /* Staff Settles Single Order OR Full Table Payment -> Table Automatically Khali */
+    function openTablePaymentModal(code) {
+      const activeOrders = state.orders.filter(o =>
+        (o.tableCode || "T01") === code &&
+        !o.tableReleased &&
+        o.status !== "Waiter Requested"
+      );
+      activeTableManageCode = code;
+      const titleEl = document.getElementById("staffSettleTitle");
+      const infoEl = document.getElementById("staffSettleOrderInfo");
+      if (!titleEl || !infoEl) return;
+
+      titleEl.textContent = `🪑 ${getTableLabel(code)} — Payment & Clear`;
+
+      if (!activeOrders.length) {
+        infoEl.innerHTML = `<div style="color:var(--ok); font-weight:700;">${getTableLabel(code)} abhi bilkul KHALI (Free) hai.</div>`;
+        document.getElementById("staffSettleModal").classList.add("open");
+        return;
+      }
+
+      const guestRowsHtml = activeOrders.map(o => {
+        const isPaid = String(o.paymentStatus || "").toLowerCase().startsWith("paid");
+        const itemStr = (o.items || []).map(i => `${i.name}×${i.qty}`).join(", ");
+        return `
+          <div style="border-bottom:1px solid var(--border); padding:8px 0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin:0; flex:1;">
+              <input type="checkbox" class="table-guest-pay-chk" data-order-id="${o.id}" ${!isPaid ? "checked" : ""} onchange="updateTableSettleSelectedTotal()" style="width:auto; margin:2px 0 0;" />
+              <div>
+                <strong style="font-size:13px;">${o.guestName || "Guest"}</strong>
+                <span class="${isPaid ? "badge-pay" : "badge-unpaid"}" style="margin-left:6px;">${o.paymentStatus || "Unpaid"}</span>
+                <div style="font-size:11px; color:var(--muted); margin-top:2px;">${itemStr}</div>
+              </div>
+            </label>
+            <strong style="color:var(--accent-2); font-size:13px;">₹${Number(o.total || 0)}</strong>
+          </div>
+        `;
+      }).join("");
+
+      infoEl.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>${getTableLabel(code)} • ${activeOrders.length} Guest Order(s)</strong>
+          <button type="button" class="pill" onclick="toggleAllTableGuestChecks(true)">Select All</button>
+        </div>
+        <div>${guestRowsHtml}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:14px;">
+          <strong>Selected Amount:</strong>
+          <strong id="tableSelectedPaySum" style="color:var(--ok); font-size:16px;">₹0</strong>
+        </div>
+      `;
+
+      document.getElementById("staffSettleModeSelect").value = "Cash";
+      document.getElementById("staffSettleTipInput").value = "0";
+      document.getElementById("staffSettleExtraInput").value = "0";
+      updateTableSettleSelectedTotal();
+      document.getElementById("staffSettleModal").classList.add("open");
+    }
+
+    function toggleAllTableGuestChecks(checked) {
+      document.querySelectorAll(".table-guest-pay-chk").forEach(chk => {
+        chk.checked = checked;
+      });
+      updateTableSettleSelectedTotal();
+    }
+
+    function updateTableSettleSelectedTotal() {
+      let sum = 0;
+      document.querySelectorAll(".table-guest-pay-chk:checked").forEach(chk => {
+        const oid = chk.getAttribute("data-order-id");
+        const ord = state.orders.find(o => o.id === oid);
+        if (ord) sum += Number(ord.total || 0);
+      });
+      const el = document.getElementById("tableSelectedPaySum");
+      if (el) el.textContent = `₹${sum}`;
+    }
+
     function openStaffSettleModal(orderId) {
       const ord = state.orders.find(o => o.id === orderId);
       if (!ord) return;
-      activeStaffSettleTarget = { type: "order", id: orderId };
-      const base = Number(ord.baseTotal ?? ord.total ?? 0);
-      document.getElementById("staffSettleTitle").textContent = `💰 Settle ${ord.tableLabel} Order`;
-      document.getElementById("staffSettleOrderInfo").innerHTML = `
-        <div><strong>${ord.tableLabel}</strong> • Customer: <strong>${ord.guestName || "Guest"}</strong></div>
-        <div style="font-size:12px; color:var(--muted); margin-top:4px;">
+      activeTableManageCode = ord.tableCode || "T01";
+      const titleEl = document.getElementById("staffSettleTitle");
+      const infoEl = document.getElementById("staffSettleOrderInfo");
+      titleEl.textContent = `💰 ${ord.tableLabel} — ${ord.guestName || "Guest"} Payment`;
+      infoEl.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="display:flex; align-items:center; gap:8px; margin:0; cursor:pointer;">
+            <input type="checkbox" class="table-guest-pay-chk" data-order-id="${ord.id}" checked onchange="updateTableSettleSelectedTotal()" style="width:auto; margin:0;" />
+            <strong>${ord.guestName || "Guest"} (${ord.tableLabel})</strong>
+          </label>
+          <strong style="color:var(--accent-2);">₹${Number(ord.total || 0)}</strong>
+        </div>
+        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
           ${ord.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
         </div>
-        <div style="font-size:15px; font-weight:800; color:var(--accent-2); margin-top:6px;">
-          Order Bill: ₹${base}
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+          <strong>Selected Amount:</strong>
+          <strong id="tableSelectedPaySum" style="color:var(--ok); font-size:16px;">₹${Number(ord.total || 0)}</strong>
         </div>
       `;
       document.getElementById("staffSettleModeSelect").value = "Cash";
@@ -1346,109 +1452,91 @@
       document.getElementById("staffSettleModal").classList.add("open");
     }
 
-    function openStaffSettleTableModal(code) {
-      const activeOrders = state.orders.filter(o =>
-        (o.tableCode || "T01") === code &&
-        !o.tableReleased &&
-        o.status !== "Waiter Requested"
-      );
-      if (!activeOrders.length) return;
-      activeStaffSettleTarget = { type: "table", code };
-      const totalDue = activeOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-      document.getElementById("staffSettleTitle").textContent = `💰 Settle Full ${getTableLabel(code)}`;
-      document.getElementById("staffSettleOrderInfo").innerHTML = `
-        <div><strong>${getTableLabel(code)}</strong> • ${activeOrders.length} Guest Order(s)</div>
-        <div style="font-size:12px; color:var(--muted); margin-top:6px;">
-          ${activeOrders.map(o => `• <strong>${o.guestName || "Guest"}</strong>: ${o.items.map(i => `${i.name}×${i.qty}`).join(", ")} = <strong>₹${o.total}</strong>`).join("<br/>")}
-        </div>
-        <div style="font-size:15px; font-weight:800; color:var(--accent-2); margin-top:8px;">
-          Combined Table Bill: ₹${totalDue}
-        </div>
-      `;
-      document.getElementById("staffSettleModeSelect").value = "Cash";
-      document.getElementById("staffSettleTipInput").value = "0";
-      document.getElementById("staffSettleExtraInput").value = "0";
-      document.getElementById("staffSettleModal").classList.add("open");
-    }
-
     async function confirmStaffSettlePayment() {
-      if (!activeStaffSettleTarget) return;
       const mode = document.getElementById("staffSettleModeSelect").value || "Cash";
       const tip = Math.max(0, Number(document.getElementById("staffSettleTipInput").value || 0));
       const extraPay = Math.max(0, Number(document.getElementById("staffSettleExtraInput").value || 0));
 
-      if (activeStaffSettleTarget.type === "order") {
-        const ord = state.orders.find(o => o.id === activeStaffSettleTarget.id);
-        if (!ord) return;
-        const base = Number(ord.baseTotal ?? ord.total ?? 0);
-        const finalAmt = base + tip + extraPay;
+      const checkedIds = Array.from(document.querySelectorAll(".table-guest-pay-chk:checked"))
+        .map(chk => chk.getAttribute("data-order-id"))
+        .filter(Boolean);
 
-        ord.tipAmount = tip;
-        ord.extraPayAmount = extraPay;
+      if (!checkedIds.length && activeTableManageCode) {
+        await clearTableNow(activeTableManageCode);
+        closeModal("staffSettleModal");
+        return;
+      }
+
+      let settledTotal = 0;
+      for (let i = 0; i < checkedIds.length; i++) {
+        const oid = checkedIds[i];
+        const ord = state.orders.find(o => o.id === oid);
+        if (!ord) continue;
+        const base = Number(ord.baseTotal ?? ord.total ?? 0);
+        const addTip = i === 0 ? tip : 0;
+        const addExtra = i === 0 ? extraPay : 0;
+        const finalAmt = base + addTip + addExtra;
+
+        ord.tipAmount = addTip;
+        ord.extraPayAmount = addExtra;
         ord.total = finalAmt;
         ord.paymentMode = mode;
         ord.paymentMethod = mode === "Cash" ? "Cash on Delivery / Counter" : "Online Paid (Staff)";
         ord.paymentStatus = `Paid (${mode})`;
         ord.tableReleased = true;
+        settledTotal += finalAmt;
         state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== ord.id);
-
-        saveLocalState();
-        updateNewOrderCounterUI();
-        renderOrders();
-        closeModal("staffSettleModal");
+        state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, ord.id]));
 
         await updateOrderFirebase(ord.id, {
-          tipAmount: tip,
-          extraPayAmount: extraPay,
+          tipAmount: addTip,
+          extraPayAmount: addExtra,
           total: finalAmt,
           paymentMode: mode,
           paymentMethod: ord.paymentMethod,
           paymentStatus: ord.paymentStatus,
           tableReleased: true
         });
-        showToast(`${mode} payment ₹${finalAmt} done! ${ord.tableLabel} Khali.`);
-      } else if (activeStaffSettleTarget.type === "table") {
-        const code = activeStaffSettleTarget.code;
-        const activeOrders = state.orders.filter(o =>
-          (o.tableCode || "T01") === code &&
-          !o.tableReleased &&
-          o.status !== "Waiter Requested"
-        );
-        activeOrders.forEach((ord, idx) => {
-          const base = Number(ord.baseTotal ?? ord.total ?? 0);
-          const addTip = idx === 0 ? tip : 0;
-          const addExtra = idx === 0 ? extraPay : 0;
-          ord.tipAmount = addTip;
-          ord.extraPayAmount = addExtra;
-          ord.total = base + addTip + addExtra;
-          ord.paymentMode = mode;
-          ord.paymentMethod = mode === "Cash" ? "Cash on Delivery / Counter" : "Online Paid (Staff)";
-          ord.paymentStatus = `Paid (${mode})`;
-          ord.tableReleased = true;
-          state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== ord.id);
-        });
-
-        saveLocalState();
-        updateNewOrderCounterUI();
-        renderOrders();
-        closeModal("staffSettleModal");
-
-        for (const ord of activeOrders) {
-          await updateOrderFirebase(ord.id, {
-            tipAmount: ord.tipAmount,
-            extraPayAmount: ord.extraPayAmount,
-            total: ord.total,
-            paymentMode: mode,
-            paymentMethod: ord.paymentMethod,
-            paymentStatus: ord.paymentStatus,
-            tableReleased: true
-          });
-        }
-        showToast(`${getTableLabel(code)} settled (${mode}) & automatically Khali!`);
       }
+
+      saveLocalState();
+      updateNewOrderCounterUI();
+      renderOrders();
+      closeModal("staffSettleModal");
+      showToast(`${mode} payment ₹${settledTotal} done! Table Khali.`);
     }
 
-    /* Customer Payment Flow */
+    async function clearTableNow(code) {
+      const targetCode = code || activeTableManageCode;
+      if (!targetCode) return;
+      const activeOrders = state.orders.filter(o =>
+        (o.tableCode || "T01") === targetCode &&
+        !o.tableReleased &&
+        o.status !== "Waiter Requested"
+      );
+      for (const ord of activeOrders) {
+        ord.tableReleased = true;
+        if (Number(ord.total || 0) > 0 && !String(ord.paymentStatus || "").toLowerCase().startsWith("paid")) {
+          ord.paymentMode = "Cash";
+          ord.paymentStatus = "Paid (Cash)";
+          ord.paymentMethod = "Cash (Table Cleared)";
+        }
+        state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== ord.id);
+        state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, ord.id]));
+        await updateOrderFirebase(ord.id, {
+          tableReleased: true,
+          paymentMode: ord.paymentMode,
+          paymentStatus: ord.paymentStatus,
+          paymentMethod: ord.paymentMethod
+        });
+      }
+      saveLocalState();
+      updateNewOrderCounterUI();
+      renderOrders();
+      closeModal("staffSettleModal");
+      showToast(`${getTableLabel(targetCode)} clear & Khali kar diya gaya!`);
+    }
+
     function openBillPayModal(orderId) {
       const ord = state.orders.find(o => o.id === orderId);
       if (!ord) return;
@@ -1564,7 +1652,6 @@
       showToast("Online payment completed! Table Khali.");
     }
 
-    /* Live Camera Scanner for Counter QR Payment */
     let scannerStream = null;
     let scannerLoopId = null;
     let scannerTargetOrderId = null;
@@ -1696,7 +1783,6 @@
       return "Cash";
     }
 
-    /* Staff Master Table Board: Booked/Khali, Kitne Aadmi, Sabka Naam, Items, Paid/Unpaid, Quick Settle */
     function renderTableStatusBoard() {
       const boardEl = document.getElementById("tableStatusBoard");
       if (!boardEl) return { freeCount: 17, busyCount: 0 };
@@ -1722,19 +1808,24 @@
         }).join("");
 
         return `
-          <div class="tbl-tile ${isBusy ? "occupied" : "free"}">
+          <div class="tbl-tile ${isBusy ? "occupied" : "free"}" ${isBusy ? `onclick="openTablePaymentModal('${code}')" style="cursor:pointer;"` : ""}>
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <strong style="font-size:13px;">${getTableLabel(code)}</strong>
               <span class="${isBusy ? "tbl-status-busy" : "tbl-status-free"}">${isBusy ? "🔴 BOOKED" : "🟢 KHALI"}</span>
             </div>
             ${isBusy ? `
               <div style="font-size:11px; color:var(--accent-2); font-weight:700;">
-                👥 ${uniquePeople.length} Aadmi (${activeOrders.length} Orders) • Due: ₹${dueSum}
+                👥 ${uniquePeople.length} Aadmi (${activeOrders.length} Orders) • Table Total: ₹${dueSum}
               </div>
               <div class="tbl-guest-list">${guestDetailsHtml}</div>
-              <button class="btn ok" style="padding:6px 8px; font-size:11px; margin-top:2px;" onclick="openStaffSettleTableModal('${code}')">
-                💰 Quick Settle & Free Table
-              </button>
+              <div style="display:flex; gap:6px; margin-top:2px;">
+                <button type="button" class="btn ok" style="flex:1; padding:6px 8px; font-size:11px;" onclick="event.stopPropagation(); openTablePaymentModal('${code}')">
+                  💰 Pay / Select Name
+                </button>
+                <button type="button" class="btn warn" style="padding:6px 8px; font-size:11px;" onclick="event.stopPropagation(); clearTableNow('${code}')">
+                  Clear
+                </button>
+              </div>
             ` : `
               <div style="font-size:11px; color:var(--muted);">Table khali hai • Ready for guest</div>
             `}
@@ -1747,7 +1838,6 @@
     }
 
     function renderOrders() {
-      // Customer My Bill: strictly shows ONLY orders for this scanned table
       const myOrders = state.orders.filter(o => o.tableCode === tableCode && o.status !== "Waiter Requested");
       const myEl = document.getElementById("myOrdersList");
       const tableTotalBill = myOrders.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -1792,13 +1882,13 @@
         `;
       }).join("") : `<p style="color:var(--muted);">Abhi ${tableLabel} ka koi order nahi hai. Menu se order karein!</p>`;
 
-      // Staff Master Overview & Order List
       const { freeCount, busyCount } = renderTableStatusBoard();
 
       let cashTotal = 0;
       let onlineTotal = 0;
       let pendingTotal = 0;
       state.orders.forEach(o => {
+        if (o.status === "Waiter Requested") return;
         const amt = Number(o.total || 0);
         if (amt <= 0) return;
         const cat = getOrderPaymentCategory(o);
@@ -1813,10 +1903,11 @@
       document.getElementById("statPendingTotal").textContent = `₹${pendingTotal}`;
       document.getElementById("statGrandTotal").textContent = `₹${grandTotal}`;
       document.getElementById("liveStatsText").textContent =
-        `Khali: ${freeCount} • Booked: ${busyCount} • Total Orders: ${state.orders.length}`;
+        `Khali: ${freeCount} • Booked: ${busyCount} • Total Orders: ${state.orders.filter(x => x.status !== "Waiter Requested").length}`;
 
       const staffEl = document.getElementById("staffOrdersList");
-      staffEl.innerHTML = state.orders.length ? state.orders.map(o => {
+      const visibleStaffOrders = state.orders.filter(o => o.status !== "Waiter Requested");
+      staffEl.innerHTML = visibleStaffOrders.length ? visibleStaffOrders.map(o => {
         const isPaid = String(o.paymentStatus || "").startsWith("Paid") || Boolean(o.tableReleased);
         const isFree = Boolean(o.tableReleased);
         const cat = getOrderPaymentCategory(o);
@@ -1837,19 +1928,19 @@
             </div>
             <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center;">
               <input id="prepInput-${o.id}" type="number" min="1" max="120" value="${o.prepMinutes || 15}" style="width:74px; margin:0; padding:7px 8px;" title="Prep minutes" />
-              <button class="btn info" onclick="sendOrderToKitchenWithTime('${o.id}')">🍳 Send to Kitchen (Min)</button>
-              <button class="btn ok" onclick="markOrderServedDinner('${o.id}')">🍽️ Served (Dinner)</button>
-              <button class="btn primary" onclick="openStaffSettleModal('${o.id}')">💰 Settle Payment (Cash/Online)</button>
+              <button type="button" class="btn info" onclick="sendOrderToKitchenWithTime('${o.id}')">🍳 Send to Kitchen (Min)</button>
+              <button type="button" class="btn ok" onclick="markOrderServedDinner('${o.id}')">🍽️ Served (Dinner)</button>
+              <button type="button" class="btn primary" onclick="openStaffSettleModal('${o.id}')">💰 Pay / Clear</button>
             </div>
           </div>
         `;
       }).join("") : `<p style="color:var(--muted);">No live orders yet.</p>`;
     }
 
-    /* Excel (.xlsx) Report Export with Cash vs Online Breakdown */
     function filterOrdersByPeriod(period) {
       const now = new Date();
       return state.orders.filter(o => {
+        if (o.status === "Waiter Requested") return false;
         if (!o.createdAt) return period === "all";
         const d = new Date(o.createdAt);
         if (period === "daily") return d.toDateString() === now.toDateString();
@@ -1989,7 +2080,7 @@
         createdAt: Date.now()
       };
       state.orders.unshift(callObj);
-      state.knownOrderIds = Array.from(new Set([callObj.id, ...state.knownOrderIds]));
+      state.seenOrderIds = Array.from(new Set([...state.seenOrderIds, callObj.id]));
       saveLocalState();
       await pushOrderToFirebase(callObj);
       showToast(`Waiter called for ${tableLabel}`);
@@ -2009,6 +2100,8 @@
         closeModal("pinModal");
         applyAccessUI();
         openTab("kds");
+        ensureAudioContext();
+        requestBrowserNotificationPermission();
         playFiveSecondRing(true);
         showToast("Staff / Owner unlocked");
       } else {
@@ -2026,7 +2119,8 @@
       if (upi) state.upiId = upi;
       state.firebaseUrl = dbUrl;
       saveLocalState();
-      showToast("Settings saved!");
+      showToast("Settings saved! Syncing live orders...");
+      hasCompletedInitialSync = false;
       syncFromFirebase();
     }
 
@@ -2131,6 +2225,11 @@
       }).join("");
     }
 
+    document.addEventListener("pointerdown", () => {
+      ensureAudioContext();
+      if (isStaffMode) requestBrowserNotificationPermission();
+    }, { once: true });
+
     loadLocalState();
     applyAccessUI();
     renderMenu();
@@ -2146,7 +2245,7 @@
     }, 1000);
     if (cleanDbUrl()) {
       syncFromFirebase();
-      setInterval(syncFromFirebase, 5000);
+      setInterval(syncFromFirebase, 3000);
     }
   </script>
 </body>
