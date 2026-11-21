@@ -359,6 +359,7 @@
             <option value="yearly">📊 Yearly Report (Is Saal)</option>
             <option value="all">🗂️ All-Time Report</option>
           </select>
+          <button class="pill" onclick="toggleCompleteOrdersSection()">📜 Complete Orders</button>
           <button class="pill ok" onclick="downloadExcelReport()">📥 Excel (.xlsx)</button>
           <button class="pill accent" onclick="printSalesReport()">🖨️ Print</button>
           <button class="pill" onclick="syncFromFirebase()">🔄 Sync</button>
@@ -393,9 +394,17 @@
       </div>
 
       <div style="font-size:13px; font-weight:800; margin-bottom:8px; color:var(--accent-2);">
-        📋 All Live Orders (Individual Guest Wise)
+        📋 Active Live Orders (Pending / Unpaid)
       </div>
       <div id="staffOrdersList"></div>
+
+      <div id="completeOrdersSection" class="card" style="margin-top:16px; display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <strong>📜 Complete Orders (Sabhi Orders — Active + Paid + Completed)</strong>
+          <button type="button" class="pill" onclick="toggleCompleteOrdersSection(false)">Hide</button>
+        </div>
+        <div id="completeOrdersList"></div>
+      </div>
     </div>
 
     <div id="tab-stafforder" style="display:none;">
@@ -2041,6 +2050,12 @@
       return `<span class="timer-pill">⏳ Order Received • Waiting for kitchen</span>`;
     }
 
+    function isOrderSettledOrCleared(o) {
+      if (!o) return false;
+      const paidFlag = String(o.paymentStatus || "").toLowerCase().startsWith("paid");
+      return Boolean(o.tableReleased) || paidFlag;
+    }
+
     function getOrderPaymentCategory(order) {
       const pm = String(order.paymentMode || order.paymentMethod || order.paymentStatus || "").toLowerCase();
       const isPaid = String(order.paymentStatus || "").toLowerCase().startsWith("paid") || Boolean(order.tableReleased);
@@ -2058,7 +2073,7 @@
       const html = codes.map(code => {
         const activeOrders = state.orders.filter(o =>
           (o.tableCode || "T01") === code &&
-          !o.tableReleased &&
+          !isOrderSettledOrCleared(o) &&
           o.status !== "Waiter Requested"
         );
         const isBusy = activeOrders.length > 0;
@@ -2101,6 +2116,53 @@
 
       boardEl.innerHTML = html;
       return { freeCount: codes.length - busyCount, busyCount };
+    }
+
+
+    let showAllCompleteOrders = false;
+
+    function toggleCompleteOrdersSection(forceState) {
+      if (typeof forceState === "boolean") showAllCompleteOrders = forceState;
+      else showAllCompleteOrders = !showAllCompleteOrders;
+      const sec = document.getElementById("completeOrdersSection");
+      if (sec) sec.style.display = showAllCompleteOrders ? "block" : "none";
+      if (showAllCompleteOrders) renderCompleteOrdersList();
+    }
+
+    function renderCompleteOrdersList() {
+      const box = document.getElementById("completeOrdersList");
+      if (!box) return;
+      const allRealOrders = (Array.isArray(state.orders) ? state.orders : []).filter(o => o && o.status !== "Waiter Requested");
+      if (!allRealOrders.length) {
+        box.innerHTML = `<p style="color:var(--muted);">Abhi tak koi order record nahi hua hai.</p>`;
+        return;
+      }
+      box.innerHTML = allRealOrders.map(o => {
+        const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
+        const isPaid = isOrderSettledOrCleared(o);
+        const cat = getOrderPaymentCategory(o);
+        const itemsText = (Array.isArray(o.items) ? o.items : []).map(i => `${i.name} × ${i.qty} (₹${Number(i.price || 0) * Number(i.qty || 1)})`).join(", ");
+        return `
+          <div class="order-box">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong>${o.tableLabel || getTableLabel(o.tableCode)} • Guest: ${o.guestName || "Guest"} • ₹${Number(o.total || 0)}</strong>
+              <span style="color:var(--accent-2); font-weight:700;">${o.status || "Order Received"}</span>
+            </div>
+            <div style="font-size:11px; color:var(--muted); margin-top:3px;">
+              Order ID: ${o.id || ""} ${dt ? `• ${dt}` : ""}
+            </div>
+            <div style="font-size:13px; color:var(--text); margin:6px 0;">
+              ${itemsText || "—"}
+              ${o.tipAmount ? ` • Tip: ₹${o.tipAmount}` : ""}
+              ${o.extraPayAmount ? ` • Extra: ₹${o.extraPayAmount}` : ""}
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="${isPaid ? "badge-pay" : "badge-unpaid"}">${isPaid ? `Paid (${cat})` : "Unpaid"}</span>
+              <span class="${o.tableReleased ? "badge-pay" : "badge-unpaid"}">${o.tableReleased ? "🟢 Table Khali" : "🔴 Table Booked"}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     function renderOrders() {
@@ -2149,6 +2211,7 @@
       }).join("") : `<p style="color:var(--muted);">Abhi ${tableLabel} ka koi order nahi hai. Menu se order karein!</p>`;
 
       const { freeCount, busyCount } = renderTableStatusBoard();
+      if (showAllCompleteOrders) renderCompleteOrdersList();
 
       let cashTotal = 0;
       let onlineTotal = 0;
@@ -2172,7 +2235,7 @@
         `Khali: ${freeCount} • Booked: ${busyCount} • Total Orders: ${state.orders.filter(x => x.status !== "Waiter Requested").length}`;
 
       const staffEl = document.getElementById("staffOrdersList");
-      const visibleStaffOrders = state.orders.filter(o => o.status !== "Waiter Requested");
+      const visibleStaffOrders = state.orders.filter(o => o.status !== "Waiter Requested" && !isOrderSettledOrCleared(o));
       staffEl.innerHTML = visibleStaffOrders.length ? (Array.isArray(visibleStaffOrders) ? visibleStaffOrders : []).map(o => {
         const isPaid = String(o.paymentStatus || "").startsWith("Paid") || Boolean(o.tableReleased);
         const isFree = Boolean(o.tableReleased);
@@ -2197,7 +2260,6 @@
               <button type="button" class="btn info" onclick="sendOrderToKitchenWithTime('${o.id}')">🍳 Send to Kitchen (Min)</button>
               <button type="button" class="btn ok" onclick="markOrderServedDinner('${o.id}')">🍽️ Served (Dinner)</button>
               <button type="button" class="btn primary" onclick="openStaffSettleModal('${o.id}')">💰 Pay / Clear</button>
-              <button type="button" class="btn warn" onclick="deleteOrderByStaff('${o.id}')">🗑️ Delete</button>
             </div>
           </div>
         `;
