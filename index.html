@@ -690,7 +690,7 @@
     function getTableCode() {
       const t = (params.get("table") || "T1").toUpperCase().trim();
       if (t === "COUNTER") return "COUNTER";
-      const num = parseInt(t.replace(/\D/g, ""), 10);
+      const num = parseInt(String(t || "").replace(/\D/g, ""), 10);
       if (!isNaN(num) && num >= 1 && num <= 16) {
         return "T" + String(num).padStart(2, "0");
       }
@@ -699,7 +699,7 @@
 
     function getTableLabel(code) {
       if (code === "COUNTER") return "Counter Pickup";
-      const num = parseInt(code.replace(/\D/g, ""), 10) || 1;
+      const num = parseInt(String(code || "").replace(/\D/g, ""), 10) || 1;
       return "Table " + String(num).padStart(2, "0");
     }
 
@@ -947,7 +947,7 @@
     }
 
     function cleanDbUrl() {
-      const raw = (state.firebaseUrl || DEFAULT_FIREBASE_URL || "").trim().replace(/\/+$/, "");
+      const raw = String(state.firebaseUrl || DEFAULT_FIREBASE_URL || "").trim().replace(/\/+$/, "");
       return raw;
     }
 
@@ -978,7 +978,7 @@
     }
 
     async function testFirebaseConnection() {
-      const inputVal = (document.getElementById("setFirebaseUrl")?.value || "").trim().replace(/\/+$/, "");
+      const inputVal = String(document.getElementById("setFirebaseUrl")?.value || "").trim().replace(/\/+$/, "");
       const base = inputVal || cleanDbUrl();
       if (!base) {
         setDbStatusBanner(false, "❌ Firebase URL khali hai");
@@ -1003,16 +1003,32 @@
       }
     }
 
-    async function updateOrderFirebase(orderId, patchObj) {
+    async function updateOrderFirebase(orderId, patchObj, fbKey = "") {
       const base = cleanDbUrl();
       if (!base) return;
-      try {
-        await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(orderId)}.json`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(patchObj)
-        });
-      } catch (e) {}
+      const keys = Array.from(new Set([orderId, fbKey].filter(Boolean)));
+      for (const k of keys) {
+        try {
+          await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(k)}.json`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(patchObj)
+          });
+        } catch (e) {}
+      }
+    }
+
+    async function deleteOrderFirebase(orderId, fbKey = "") {
+      const base = cleanDbUrl();
+      if (!base) return;
+      const keys = Array.from(new Set([orderId, fbKey].filter(Boolean)));
+      for (const k of keys) {
+        try {
+          await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(k)}.json`, {
+            method: "DELETE"
+          });
+        } catch (e) {}
+      }
     }
 
     async function pushMenuToFirebase() {
@@ -1052,7 +1068,24 @@
         const data = await res.json();
         setDbStatusBanner(true, "✅ Live Sync Active");
         if (data && typeof data === "object") {
-          const list = Object.values(data).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          const list = Object.entries(data)
+            .filter(([, v]) => v && typeof v === "object")
+            .map(([fbKey, v]) => {
+              const tCode = v.tableCode || "T01";
+              return {
+                ...v,
+                _fbKey: fbKey,
+                id: v.id || fbKey,
+                tableCode: tCode,
+                tableLabel: v.tableLabel || getTableLabel(tCode),
+                guestName: v.guestName || "Guest",
+                total: Number(v.total || 0),
+                status: v.status || "Order Received",
+                paymentStatus: v.paymentStatus || "Unpaid",
+                tableReleased: Boolean(v.tableReleased)
+              };
+            })
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           state.orders = list;
           processOrdersForAlerts(list);
           saveLocalState();
@@ -1727,6 +1760,18 @@
       showToast(`${mode} payment ₹${settledTotal} done! Table Khali.`);
     }
 
+
+    async function deleteOrderByStaff(orderId) {
+      const target = state.orders.find(o => o.id === orderId || o._fbKey === orderId);
+      state.orders = state.orders.filter(o => o.id !== orderId && o._fbKey !== orderId);
+      state.unseenOrderIds = state.unseenOrderIds.filter(id => id !== orderId);
+      saveLocalState();
+      updateNewOrderCounterUI();
+      renderOrders();
+      await deleteOrderFirebase(target?.id || orderId, target?._fbKey || "");
+      showToast("Order delete kar diya gaya!");
+    }
+
     async function clearTableNow(code) {
       const targetCode = code || activeTableManageCode;
       if (!targetCode) return;
@@ -1749,7 +1794,7 @@
           paymentMode: ord.paymentMode,
           paymentStatus: ord.paymentStatus,
           paymentMethod: ord.paymentMethod
-        });
+        }, ord._fbKey);
       }
       saveLocalState();
       updateNewOrderCounterUI();
@@ -2025,7 +2070,7 @@
         const guestDetailsHtml = (Array.isArray(activeOrders) ? activeOrders : []).map(o => {
           const paidFlag = String(o.paymentStatus || "").startsWith("Paid");
           const itemStr = (o.items || []).map(i => `${i.name}×${i.qty}`).join(", ");
-          return `<div>• <strong>${o.guestName || "Guest"}</strong> (₹${o.total} • ${paidFlag ? "Paid" : "Unpaid"}): ${itemStr}</div>`;
+          return `<div>• <strong>${o.guestName || "Guest"}</strong> (₹${Number(o.total || 0)} • ${paidFlag ? "Paid" : "Unpaid"}): ${itemStr}</div>`;
         }).join("");
 
         return `
@@ -2135,7 +2180,7 @@
         return `
           <div class="order-box">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-              <strong>${o.tableLabel} • Guest: ${o.guestName || "Guest"} • ₹${o.total}</strong>
+              <strong>${o.tableLabel || getTableLabel(o.tableCode)} • Guest: ${o.guestName || "Guest"} • ₹${Number(o.total || 0)}</strong>
               <span style="color:var(--accent-2); font-weight:700;">${o.status}</span>
             </div>
             <div style="font-size:12px; margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
@@ -2152,6 +2197,7 @@
               <button type="button" class="btn info" onclick="sendOrderToKitchenWithTime('${o.id}')">🍳 Send to Kitchen (Min)</button>
               <button type="button" class="btn ok" onclick="markOrderServedDinner('${o.id}')">🍽️ Served (Dinner)</button>
               <button type="button" class="btn primary" onclick="openStaffSettleModal('${o.id}')">💰 Pay / Clear</button>
+              <button type="button" class="btn warn" onclick="deleteOrderByStaff('${o.id}')">🗑️ Delete</button>
             </div>
           </div>
         `;
