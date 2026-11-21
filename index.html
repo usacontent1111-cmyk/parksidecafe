@@ -501,7 +501,13 @@
         <input id="setUpiId" type="text" placeholder="parksidecafe@upi" />
         <label style="font-size:12px; color:var(--muted);">Firebase Realtime Database URL</label>
         <input id="setFirebaseUrl" type="url" placeholder="https://parksidecafe-default-rtdb.firebaseio.com" />
-        <button class="btn primary" onclick="saveSettings()">💾 Save Settings</button>
+        <div id="dbConnStatusText" style="font-size:12px; font-weight:700; color:var(--ok); margin-bottom:10px;">
+          ✅ Default Live Sync URL Ready
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn primary" style="flex:1;" onclick="saveSettings()">💾 Save Settings</button>
+          <button type="button" class="btn ok" style="flex:1;" onclick="testFirebaseConnection()">🔌 Test Live Sync</button>
+        </div>
       </div>
     </div>
   </div>
@@ -675,9 +681,11 @@
       { id: "cold_drink", name: "Chilled Soft Drink Can", price: 40 }
     ];
 
-    const STORAGE_KEY = "parkside_cafe_state_v7";
+    const DEFAULT_FIREBASE_URL = "https://parksidecafe-default-rtdb.firebaseio.com";
+    const STORAGE_KEY = "parkside_cafe_state_v8";
     const params = new URLSearchParams(window.location.search);
     const isStaffMode = params.get("mode") === "staff" || params.get("mode") === "owner";
+    const urlDbParam = (params.get("db") || "").trim();
 
     function getTableCode() {
       const t = (params.get("table") || "T1").toUpperCase().trim();
@@ -702,7 +710,7 @@
       staffPin: "1111",
       ownerPin: "1234",
       upiId: "parksidecafe@upi",
-      firebaseUrl: "",
+      firebaseUrl: urlDbParam || DEFAULT_FIREBASE_URL,
       soundEnabled: true,
       seenOrderIds: [],
       unseenOrderIds: [],
@@ -726,9 +734,11 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
+          const resolvedDb = urlDbParam || (parsed.firebaseUrl && parsed.firebaseUrl.trim()) || DEFAULT_FIREBASE_URL;
           state = {
             ...state,
             ...parsed,
+            firebaseUrl: resolvedDb,
             soundEnabled: parsed.soundEnabled !== undefined ? Boolean(parsed.soundEnabled) : true,
             seenOrderIds: Array.isArray(parsed.seenOrderIds) ? parsed.seenOrderIds : [],
             unseenOrderIds: Array.isArray(parsed.unseenOrderIds) ? parsed.unseenOrderIds : [],
@@ -937,19 +947,60 @@
     }
 
     function cleanDbUrl() {
-      return (state.firebaseUrl || "").trim().replace(/\/+$/, "");
+      const raw = (state.firebaseUrl || DEFAULT_FIREBASE_URL || "").trim().replace(/\/+$/, "");
+      return raw;
+    }
+
+    function setDbStatusBanner(ok, msg) {
+      const el = document.getElementById("dbConnStatusText");
+      if (!el) return;
+      el.style.color = ok ? "var(--ok)" : "#f87171";
+      el.textContent = msg;
     }
 
     async function pushOrderToFirebase(order) {
       const base = cleanDbUrl();
-      if (!base) return;
+      if (!base) return false;
       try {
-        await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(order.id)}.json`, {
+        const res = await fetch(`${base}/parksidecafe/orders/${encodeURIComponent(order.id)}.json`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(order)
         });
-      } catch (e) {}
+        if (!res.ok) {
+          showToast("Order local save hua, Firebase Rules check karein");
+          return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function testFirebaseConnection() {
+      const inputVal = (document.getElementById("setFirebaseUrl")?.value || "").trim().replace(/\/+$/, "");
+      const base = inputVal || cleanDbUrl();
+      if (!base) {
+        setDbStatusBanner(false, "❌ Firebase URL khali hai");
+        return;
+      }
+      setDbStatusBanner(true, "⏳ Testing Firebase connection...");
+      try {
+        const testRes = await fetch(`${base}/parksidecafe/ping.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ok: true, ts: Date.now() })
+        });
+        if (testRes.ok) {
+          setDbStatusBanner(true, "✅ Connected! Live Sync Ready (Read & Write Working)");
+          showToast("Firebase Live Sync Connected!");
+        } else {
+          setDbStatusBanner(false, `❌ Error ${testRes.status}: Firebase Rules mein .read aur .write ko true karein`);
+          showToast("Firebase Permission Error: Rules check karein");
+        }
+      } catch (e) {
+        setDbStatusBanner(false, "❌ Network/URL error: Sahi https://...firebaseio.com URL daalein");
+      }
     }
 
     async function updateOrderFirebase(orderId, patchObj) {
@@ -999,14 +1050,17 @@
         const res = await fetch(`${base}/parksidecafe/orders.json?t=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
+        setDbStatusBanner(true, "✅ Live Sync Active");
         if (data && typeof data === "object") {
-          const list = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          const list = Object.values(data).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           state.orders = list;
           processOrdersForAlerts(list);
           saveLocalState();
           renderOrders();
         }
-      } catch (e) {}
+      } catch (e) {
+        setDbStatusBanner(false, "⚠️ Sync retry ho raha hai...");
+      }
     }
 
     function getActiveMenu() {
@@ -1294,7 +1348,7 @@
       if (!state.cart.length) {
         list.innerHTML = `<p style="color:var(--muted); margin-bottom:10px;">Menu se koi item add karein (extra items optional hain).</p>`;
       } else {
-        list.innerHTML = state.cart.map(c => `
+        list.innerHTML = (Array.isArray(state.cart) ? state.cart : []).map(c => `
           <div class="order-box" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <strong>${c.name}</strong> × ${c.qty}
@@ -1341,7 +1395,7 @@
 
       const extras = getSelectedExtrasList();
       const combinedItems = [
-        ...state.cart.map(i => ({ ...i })),
+        ...(Array.isArray(state.cart) ? state.cart : []).map(i => ({ ...i })),
         ...extras
       ];
 
@@ -1535,7 +1589,7 @@
         return;
       }
 
-      const guestRowsHtml = activeOrders.map(o => {
+      const guestRowsHtml = (Array.isArray(activeOrders) ? activeOrders : []).map(o => {
         const isPaid = String(o.paymentStatus || "").toLowerCase().startsWith("paid");
         const itemStr = (o.items || []).map(i => `${i.name}×${i.qty}`).join(", ");
         return `
@@ -1606,7 +1660,7 @@
           <strong style="color:var(--accent-2);">₹${Number(ord.total || 0)}</strong>
         </div>
         <div style="font-size:12px; color:var(--muted); margin-top:6px;">
-          ${ord.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+          ${(Array.isArray(ord.items) ? ord.items : []).map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
           <strong>Selected Amount:</strong>
@@ -1712,7 +1766,7 @@
       document.getElementById("billPayOrderDetails").innerHTML = `
         <div><strong>${ord.tableLabel}</strong> • Guest: <strong>${ord.guestName || "Guest"}</strong></div>
         <div style="font-size:12px; color:var(--muted); margin-top:4px;">
-          ${ord.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+          ${(Array.isArray(ord.items) ? ord.items : []).map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
         </div>
       `;
       document.getElementById("billTipInput").value = "0";
@@ -1965,10 +2019,10 @@
         const isBusy = activeOrders.length > 0;
         if (isBusy) busyCount += 1;
 
-        const uniquePeople = Array.from(new Set(activeOrders.map(o => (o.guestName || "Guest").trim())));
+        const uniquePeople = Array.from(new Set((Array.isArray(activeOrders) ? activeOrders : []).map(o => (o.guestName || "Guest").trim())));
         const dueSum = activeOrders.reduce((s, o) => s + Number(o.total || 0), 0);
 
-        const guestDetailsHtml = activeOrders.map(o => {
+        const guestDetailsHtml = (Array.isArray(activeOrders) ? activeOrders : []).map(o => {
           const paidFlag = String(o.paymentStatus || "").startsWith("Paid");
           const itemStr = (o.items || []).map(i => `${i.name}×${i.qty}`).join(", ");
           return `<div>• <strong>${o.guestName || "Guest"}</strong> (₹${o.total} • ${paidFlag ? "Paid" : "Unpaid"}): ${itemStr}</div>`;
@@ -2016,7 +2070,7 @@
             <div style="font-size:12px; color:var(--muted);">Combined Table Total: ₹${tableTotalBill}</div>
           </div>
         </div>
-      ` + myOrders.map(o => {
+      ` + (Array.isArray(myOrders) ? myOrders : []).map(o => {
         const isPaid = String(o.paymentStatus || "").startsWith("Paid") || o.tableReleased;
         const isServed = o.status === "Served / Dinner Ready";
         return `
@@ -2035,7 +2089,7 @@
               ` : ""}
             </div>
             <div style="font-size:13px; color:var(--muted); margin:6px 0;">
-              ${o.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+              ${(Array.isArray(o.items) ? o.items : []).map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
               <strong>Bill Total: ₹${o.total}</strong>
@@ -2074,7 +2128,7 @@
 
       const staffEl = document.getElementById("staffOrdersList");
       const visibleStaffOrders = state.orders.filter(o => o.status !== "Waiter Requested");
-      staffEl.innerHTML = visibleStaffOrders.length ? visibleStaffOrders.map(o => {
+      staffEl.innerHTML = visibleStaffOrders.length ? (Array.isArray(visibleStaffOrders) ? visibleStaffOrders : []).map(o => {
         const isPaid = String(o.paymentStatus || "").startsWith("Paid") || Boolean(o.tableReleased);
         const isFree = Boolean(o.tableReleased);
         const cat = getOrderPaymentCategory(o);
@@ -2089,7 +2143,7 @@
               <span class="${isFree ? "badge-pay" : "badge-unpaid"}">${isFree ? "🟢 Table Khali" : "🔴 Table Booked"}</span>
             </div>
             <div style="font-size:13px; color:var(--muted); margin:6px 0;">
-              ${o.items.map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
+              ${(Array.isArray(o.items) ? o.items : []).map(i => `${i.name} × ${i.qty} (₹${i.price * i.qty})`).join(", ")}
               ${o.tipAmount ? ` • Tip: ₹${o.tipAmount}` : ""}
               ${o.extraPayAmount ? ` • Extra Pay: ₹${o.extraPayAmount}` : ""}
             </div>
@@ -2125,7 +2179,7 @@
       let onlineSum = 0;
       let unpaidSum = 0;
 
-      const rows = filtered.map(o => {
+      const rows = (Array.isArray(filtered) ? filtered : []).map(o => {
         const amt = Number(o.total || 0);
         const cat = getOrderPaymentCategory(o);
         if (amt > 0) {
@@ -2139,7 +2193,7 @@
           "Table": o.tableLabel || o.tableCode || "",
           "Table Status": o.tableReleased ? "Khali (Free)" : "Booked",
           "Customer Name": o.guestName || "Guest",
-          "Items": Array.isArray(o.items) ? o.items.map(i => `${i.name} x${i.qty}`).join(" | ") : "",
+          "Items": Array.isArray(o.items) ? (Array.isArray(o.items) ? o.items : []).map(i => `${i.name} x${i.qty}`).join(" | ") : "",
           "Base Bill (INR)": Number(o.baseTotal ?? o.total ?? 0),
           "Tip (INR)": Number(o.tipAmount || 0),
           "Extra Payment (INR)": Number(o.extraPayAmount || 0),
@@ -2187,7 +2241,7 @@
       const period = document.getElementById("reportPeriodSelect")?.value || "daily";
       const filtered = filterOrdersByPeriod(period);
       let cashSum = 0, onlineSum = 0, unpaidSum = 0;
-      const rowsHtml = filtered.map(o => {
+      const rowsHtml = (Array.isArray(filtered) ? filtered : []).map(o => {
         const amt = Number(o.total || 0);
         const cat = getOrderPaymentCategory(o);
         if (amt > 0) {
@@ -2196,7 +2250,7 @@
           else unpaidSum += amt;
         }
         const dt = o.createdAt ? new Date(o.createdAt).toLocaleString("en-IN") : "";
-        const itemsText = Array.isArray(o.items) ? o.items.map(i => `${i.name} × ${i.qty}`).join(", ") : "";
+        const itemsText = Array.isArray(o.items) ? (Array.isArray(o.items) ? o.items : []).map(i => `${i.name} × ${i.qty}`).join(", ") : "";
         return `<tr>
           <td>${o.id || ""}</td><td>${dt}</td><td>${o.tableLabel || ""}</td>
           <td>${o.guestName || "Guest"}</td><td>${itemsText}</td>
@@ -2349,7 +2403,7 @@
       let base = (document.getElementById("baseUrlInput").value || "").trim();
       if (!base.endsWith("/")) base += "/";
       const label = getTableLabel(code);
-      const url = `${base}?table=${code}`;
+      const dbNow = cleanDbUrl(); const url = (dbNow && dbNow !== DEFAULT_FIREBASE_URL) ? `${base}?table=${code}&db=${encodeURIComponent(dbNow)}` : `${base}?table=${code}`;
       const qrSrc = makeQrDataUrl(url);
       if (!qrSrc) return;
       const cardPng = await buildQrCardPng(label, url, qrSrc);
@@ -2378,7 +2432,7 @@
       const codes = ["COUNTER", ...Array.from({ length: 16 }, (_, i) => "T" + String(i + 1).padStart(2, "0"))];
       document.getElementById("qrGrid").innerHTML = codes.map(code => {
         const label = getTableLabel(code);
-        const url = `${base}?table=${code}`;
+        const dbNow = cleanDbUrl(); const url = (dbNow && dbNow !== DEFAULT_FIREBASE_URL) ? `${base}?table=${code}&db=${encodeURIComponent(dbNow)}` : `${base}?table=${code}`;
         const imgSrc = makeQrDataUrl(url);
         return `
           <div class="qr-card">
@@ -2410,10 +2464,8 @@
         renderOrders();
       }
     }, 1000);
-    if (cleanDbUrl()) {
-      syncFromFirebase();
-      setInterval(syncFromFirebase, 3000);
-    }
+    syncFromFirebase();
+    setInterval(syncFromFirebase, 2500);
   </script>
 </body>
 </html>
