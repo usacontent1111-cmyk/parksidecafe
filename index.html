@@ -315,6 +315,7 @@
       <button class="tab-btn guest-only-tab" data-tab="game" onclick="openTab('game')">🎮 Play Game</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="kds" onclick="openTab('kds')">🔥 All Tables, Orders & Money</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="stafforder" onclick="openTab('stafforder')">➕ Staff Table Order</button>
+      <button class="tab-btn hidden-guest staff-only" data-tab="menumgr" onclick="openTab('menumgr')">🍽️ Menu Manager</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="qrs" onclick="openTab('qrs')">📲 Counter + 16 QRs</button>
       <button class="tab-btn hidden-guest staff-only" data-tab="settings" onclick="openTab('settings')">⚙️ PINs & Database</button>
     </div>
@@ -441,6 +442,39 @@
         <button class="btn primary" style="width:100%;" onclick="submitStaffManualOrder()">
           🍳 Place & Send Order to Kitchen
         </button>
+      </div>
+    </div>
+
+    <!-- STAFF MENU MANAGER TAB (ADD / EDIT PRICE UP OR DOWN / DELETE / SYNC) -->
+    <div id="tab-menumgr" style="display:none;">
+      <div class="card" style="margin-bottom:14px;">
+        <h3 style="margin-bottom:8px;">➕ Naya Menu Item Add Karein</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+          <div>
+            <label style="font-size:12px; color:var(--muted);">Item Name *</label>
+            <input id="newMenuNameInput" type="text" placeholder="e.g. Cold Brew / Momos" style="margin-bottom:8px;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted);">Price (₹) *</label>
+            <input id="newMenuPriceInput" type="number" min="0" step="1" placeholder="e.g. 90" style="margin-bottom:8px;" />
+          </div>
+          <div>
+            <label style="font-size:12px; color:var(--muted);">Description (Optional)</label>
+            <input id="newMenuDescInput" type="text" placeholder="Short description" style="margin-bottom:8px;" />
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+          <button type="button" class="btn ok" onclick="addNewMenuItemByStaff()">➕ Add Item to Menu</button>
+          <button type="button" class="btn" onclick="resetDefaultMenuByStaff()">↺ Reset Default Menu</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <strong>📋 Sabhi Menu Items (Naam, Price Kam/Zyada Ya Delete Karein)</strong>
+          <span style="font-size:12px; color:var(--muted);">Price badhane ya kam karne ke baad "Save" dabayein</span>
+        </div>
+        <div id="staffMenuManagerList"></div>
       </div>
     </div>
 
@@ -673,6 +707,7 @@
       seenOrderIds: [],
       unseenOrderIds: [],
       staffUnlocked: isStaffMode,
+      menu: MENU_ITEMS.map(m => ({ ...m })),
       cart: [],
       orders: []
     };
@@ -714,6 +749,7 @@
           seenOrderIds: state.seenOrderIds,
           unseenOrderIds: state.unseenOrderIds,
           staffUnlocked: state.staffUnlocked,
+          menu: state.menu,
           cart: state.cart,
           orders: state.orders
         }));
@@ -928,9 +964,37 @@
       } catch (e) {}
     }
 
+    async function pushMenuToFirebase() {
+      const base = cleanDbUrl();
+      if (!base) return;
+      try {
+        await fetch(`${base}/parksidecafe/menu.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(state.menu)
+        });
+      } catch (e) {}
+    }
+
     async function syncFromFirebase() {
       const base = cleanDbUrl();
       if (!base) return;
+      try {
+        const menuRes = await fetch(`${base}/parksidecafe/menu.json?t=${Date.now()}`, { cache: "no-store" });
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          if (Array.isArray(menuData) && menuData.length) {
+            state.menu = menuData.filter(Boolean);
+            renderMenu();
+            if (isStaffMode && state.staffUnlocked) {
+              renderStaffOrderForm();
+              const mmSec = document.getElementById("tab-menumgr");
+              if (mmSec && mmSec.style.display !== "none") renderMenuManagerList();
+            }
+          }
+        }
+      } catch (e) {}
+
       try {
         const res = await fetch(`${base}/parksidecafe/orders.json?t=${Date.now()}`, { cache: "no-store" });
         if (!res.ok) return;
@@ -943,6 +1007,108 @@
           renderOrders();
         }
       } catch (e) {}
+    }
+
+    function getActiveMenu() {
+      return Array.isArray(state.menu) && state.menu.length ? state.menu : MENU_ITEMS;
+    }
+
+    function renderMenuManagerList() {
+      const el = document.getElementById("staffMenuManagerList");
+      if (!el) return;
+      const items = getActiveMenu();
+      el.innerHTML = items.map(item => `
+        <div class="order-box" style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:grid; grid-template-columns: 1.4fr 0.8fr 1.6fr; gap:8px;">
+            <div>
+              <label style="font-size:11px; color:var(--muted);">Item Name</label>
+              <input id="editMenuName-${item.id}" type="text" value="${String(item.name || "").replace(/"/g, "&quot;")}" style="margin:4px 0 0; padding:8px;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--muted);">Price (₹)</label>
+              <input id="editMenuPrice-${item.id}" type="number" min="0" step="1" value="${Number(item.price || 0)}" style="margin:4px 0 0; padding:8px;" />
+            </div>
+            <div>
+              <label style="font-size:11px; color:var(--muted);">Description</label>
+              <input id="editMenuDesc-${item.id}" type="text" value="${String(item.desc || "").replace(/"/g, "&quot;")}" style="margin:4px 0 0; padding:8px;" />
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+            <button type="button" class="btn ok" style="padding:7px 12px; font-size:12px;" onclick="updateMenuItemByStaff(${item.id})">💾 Save Price / Item</button>
+            <button type="button" class="btn warn" style="padding:7px 12px; font-size:12px;" onclick="deleteMenuItemByStaff(${item.id})">🗑️ Delete</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function addNewMenuItemByStaff() {
+      const name = (document.getElementById("newMenuNameInput").value || "").trim();
+      const price = Number(document.getElementById("newMenuPriceInput").value);
+      const desc = (document.getElementById("newMenuDescInput").value || "").trim() || "Freshly prepared";
+      if (!name) {
+        showToast("Item ka naam likhein");
+        return;
+      }
+      if (isNaN(price) || price < 0) {
+        showToast("Sahi price (₹) daalein");
+        return;
+      }
+      const nextId = state.menu.reduce((m, it) => Math.max(m, Number(it.id || 0)), 0) + 1;
+      state.menu.push({ id: nextId, name, price, desc });
+      document.getElementById("newMenuNameInput").value = "";
+      document.getElementById("newMenuPriceInput").value = "";
+      document.getElementById("newMenuDescInput").value = "";
+      saveLocalState();
+      renderMenu();
+      renderStaffOrderForm();
+      renderMenuManagerList();
+      await pushMenuToFirebase();
+      showToast(`${name} (₹${price}) menu mein add ho gaya!`);
+    }
+
+    async function updateMenuItemByStaff(id) {
+      const item = state.menu.find(m => Number(m.id) === Number(id));
+      if (!item) return;
+      const newName = (document.getElementById(`editMenuName-${id}`)?.value || "").trim();
+      const newPrice = Number(document.getElementById(`editMenuPrice-${id}`)?.value);
+      const newDesc = (document.getElementById(`editMenuDesc-${id}`)?.value || "").trim();
+      if (!newName) {
+        showToast("Item ka naam khali nahi ho sakta");
+        return;
+      }
+      if (isNaN(newPrice) || newPrice < 0) {
+        showToast("Sahi price (₹) daalein");
+        return;
+      }
+      item.name = newName;
+      item.price = newPrice;
+      item.desc = newDesc;
+      saveLocalState();
+      renderMenu();
+      renderStaffOrderForm();
+      renderMenuManagerList();
+      await pushMenuToFirebase();
+      showToast(`${newName} ka price ₹${newPrice} update ho gaya!`);
+    }
+
+    async function deleteMenuItemByStaff(id) {
+      state.menu = state.menu.filter(m => Number(m.id) !== Number(id));
+      saveLocalState();
+      renderMenu();
+      renderStaffOrderForm();
+      renderMenuManagerList();
+      await pushMenuToFirebase();
+      showToast("Item menu se hata diya gaya");
+    }
+
+    async function resetDefaultMenuByStaff() {
+      state.menu = MENU_ITEMS.map(m => ({ ...m }));
+      saveLocalState();
+      renderMenu();
+      renderStaffOrderForm();
+      renderMenuManagerList();
+      await pushMenuToFirebase();
+      showToast("Default menu restore ho gaya");
     }
 
     function showToast(msg) {
@@ -993,11 +1159,11 @@
       if (isStaffMode && tabName === "game") {
         tabName = "kds";
       }
-      if ((tabName === "kds" || tabName === "stafforder" || tabName === "qrs" || tabName === "settings") && (!isStaffMode || !state.staffUnlocked)) {
+      if ((tabName === "kds" || tabName === "stafforder" || tabName === "menumgr" || tabName === "qrs" || tabName === "settings") && (!isStaffMode || !state.staffUnlocked)) {
         openStaffPortal();
         return;
       }
-      ["menu", "myorders", "game", "kds", "stafforder", "qrs", "settings"].forEach(t => {
+      ["menu", "myorders", "game", "kds", "stafforder", "menumgr", "qrs", "settings"].forEach(t => {
         const sec = document.getElementById("tab-" + t);
         if (sec) sec.style.display = t === tabName ? "block" : "none";
       });
@@ -1006,6 +1172,7 @@
       });
       if (tabName === "qrs") renderQRs();
       if (tabName === "stafforder") renderStaffOrderForm();
+      if (tabName === "menumgr") renderMenuManagerList();
       if (tabName === "kds") { renderOrders(); syncFromFirebase(); }
       if (tabName === "myorders") { renderOrders(); syncFromFirebase(); }
       if (tabName === "settings") {
@@ -1039,7 +1206,7 @@
 
     function renderMenu() {
       const grid = document.getElementById("menuGrid");
-      grid.innerHTML = MENU_ITEMS.map(item => `
+      grid.innerHTML = getActiveMenu().map(item => `
         <div class="card">
           <div>
             <div class="item-name">${item.name}</div>
@@ -1054,7 +1221,7 @@
     }
 
     function addToCart(id) {
-      const item = MENU_ITEMS.find(m => m.id === id);
+      const item = getActiveMenu().find(m => m.id === id);
       if (!item) return;
       const found = state.cart.find(c => c.id === id);
       if (found) found.qty += 1;
@@ -1223,7 +1390,7 @@
     function renderStaffOrderForm() {
       const box = document.getElementById("staffMenuPicker");
       if (!box) return;
-      box.innerHTML = MENU_ITEMS.map(item => {
+      box.innerHTML = getActiveMenu().map(item => {
         const q = staffQuantities[item.id] || 0;
         return `
           <div class="extra-row">
@@ -1250,7 +1417,7 @@
 
     function updateStaffOrderPreview() {
       let sum = 0;
-      MENU_ITEMS.forEach(item => {
+      getActiveMenu().forEach(item => {
         sum += (staffQuantities[item.id] || 0) * item.price;
       });
       const extra = Math.max(0, Number(document.getElementById("staffExtraChargeInput")?.value || 0));
@@ -1265,7 +1432,7 @@
       const extraAmt = Math.max(0, Number(document.getElementById("staffExtraChargeInput").value || 0));
 
       const items = [];
-      MENU_ITEMS.forEach(m => {
+      getActiveMenu().forEach(m => {
         const q = staffQuantities[m.id] || 0;
         if (q > 0) items.push({ id: m.id, name: m.name, price: m.price, qty: q });
       });
